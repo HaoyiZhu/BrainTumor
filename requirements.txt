@@ -1,0 +1,8 @@
+pyyaml
+hydra-core
+pandas
+matplotlib
+seaborn
+opencv-python
+imageio
+pytorch-lightning
