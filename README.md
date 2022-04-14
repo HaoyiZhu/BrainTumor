@@ -1,4 +1,4 @@
-## Brain Tumor Classification and Segmentation
+# Brain Tumor Classification and Segmentation
 
 [Brain Tumor AI Challenge (2021)](https://www.rsna.org/education/ai-resources-and-training/ai-image-challenge/brain-tumor-ai-challenge-2021)
 
@@ -6,7 +6,7 @@ Classification: [RSNA-MICCAI Brain Tumor Radiogenomic Classification](https://ww
 
 Segmentation: [RSNA-ASNR-MICCAI Brain Tumor Segmentation (BraTS)](https://www.kaggle.com/datasets/dschettler8845/brats-2021-task1)
 
-### Installation
+## Installation
 
 ```bash
 # 1. Create a conda virtual enviornment.
@@ -24,7 +24,7 @@ cd BrainTumor
 pip install -e .
 ```
 
-### Prepare dataset
+## Prepare dataset
 
 First get [kaggle API](https://github.com/Kaggle/kaggle-api) by running `pip install kaggle`, then you may need to register your kaggle account following [here](https://blog.csdn.net/qq_40263477/article/details/107801843). Next download brain tumor segmentation and classification datasets:
 
@@ -67,10 +67,10 @@ Finally, extract the datasets to `./data` and make them look like this:
 	
 ```
 
-### Training
+## Training
 
 TBD
 
-### Validation
+## Validation
 
 TBD
