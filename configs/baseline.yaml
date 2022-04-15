@@ -1,0 +1,39 @@
+defaults:
+  - _self_  # all below configs will override this conf.yaml
+
+seed: 42
+
+exp_root_dir: "./exp"
+run_name:
+
+dataset:
+  task: "classification"
+  root: "./data/${dataset.task}"
+  img_dim: 3
+  mri_type: "T1wCE"
+
+model:
+  type: Unet
+  
+train:
+  lr: 1e-3
+  weight_decay: 1e-2
+  max_epochs: 100
+  devices: 2
+  strategy: "ddp"
+  scheduler:
+    lr_cosine_min: 1e-5
+    lr_cosine_epochs: ${train.max_epochs}
+    lr_cosine_warmup_epochs: 5
+
+checkpoint:
+  monitor: "val_acc"
+  mode: "max"
+  save_last: true
+  save_top_k: 5
+  filename: "{epoch:02d}-{val_acc:.4f}"
+
+hydra:
+  run:
+    dir: .
+  output_subdir: null
