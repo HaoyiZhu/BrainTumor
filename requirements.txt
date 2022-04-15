@@ -6,3 +6,5 @@ seaborn
 opencv-python
 imageio
 pytorch-lightning
+pydicom
+nibabel
