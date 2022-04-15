@@ -27,15 +27,16 @@ class BraTClassificationDataset(Dataset):
     mri_type: str or list of str, default is T1wCE
         The MRI type of input images. Candidates include FLAIR, T1w, T2w and T1wCE
     """
+
     MRI_TYPES = ["FLAIR", "T1w", "T2w", "T1wCE"]
     EXCLUDE_INDEXES = [109, 123, 709]
 
     def __init__(
-        self, 
-        root: str, 
-        train: bool = True, 
-        img_dim: int = 2, 
-        mri_type: str | list[str] = 'T1wCE'
+        self,
+        root: str,
+        train: bool = True,
+        img_dim: int = 2,
+        mri_type: str | list[str] = "T1wCE",
     ):
         super(BraTClassificationDataset, self).__init__()
         self._root = root
@@ -43,20 +44,22 @@ class BraTClassificationDataset(Dataset):
         self._img_dim = img_dim
         self._mri_type = mri_type
         self._check_mri_type()
-        
-        self._img_dir = os.path.join(root, 'train' if self._train else 'test')
+
+        self._img_dir = os.path.join(root, "train" if self._train else "test")
 
         labels = None
         if self._train:
-            labels = read_csv(os.path.join(self._root, 'train_labels.csv'))
+            labels = read_csv(os.path.join(self._root, "train_labels.csv"))
 
         self._items, self._labels = self._prepare_data(labels)
 
     def _check_mri_type(self):
         if isinstance(self._mri_type, list):
-            assert set(self._mri_type) <= set(self.MRI_TYPES), f'Wrong MRI type: {self._mri_type}'
+            assert set(self._mri_type) <= set(
+                self.MRI_TYPES
+            ), f"Wrong MRI type: {self._mri_type}"
         elif isinstance(self._mri_type, str):
-            assert self._mri_type in self.MRI_TYPES, f'Wrong MRI type: {self._mri_type}'
+            assert self._mri_type in self.MRI_TYPES, f"Wrong MRI type: {self._mri_type}"
         else:
             raise NotImplementedError
 
