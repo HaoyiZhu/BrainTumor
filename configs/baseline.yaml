@@ -10,7 +10,8 @@ dataset:
   task: "classification"
   root: "./data/${dataset.task}"
   img_dim: 3
-  mri_type: "T1wCE"
+  mri_type:
+    - "T1wCE"
 
 model:
   type: Unet
