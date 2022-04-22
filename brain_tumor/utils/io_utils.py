@@ -1,3 +1,7 @@
+"""
+IO related utils.
+"""
+
 import os
 
 import numpy as np
@@ -37,6 +41,7 @@ def read_dicom_dir(path):
         idxes.append(int(fn.split(".")[0].split("-")[-1]))
 
     return slices, idxes
+
 
 def slices_to_3d_img(slices, ids=None):
     return np.concatenate([np.array(s) for s in slices], axis=0)
