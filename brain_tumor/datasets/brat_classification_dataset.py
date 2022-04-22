@@ -7,6 +7,8 @@ Author: Haoyi Zhu
 from __future__ import annotations
 
 import os
+import json
+from omegaconf import DictConfig, ListConfig
 from torch.utils.data import Dataset
 
 import brain_tumor.utils as U
@@ -18,6 +20,8 @@ class BraTClassificationDataset(Dataset):
 
     Parameters
     ----------
+    cfg: dict
+        Dataset configuration.
     root: str
         Path to directory of classification data.
     train: bool
@@ -33,19 +37,25 @@ class BraTClassificationDataset(Dataset):
 
     def __init__(
         self,
+        cfg: DictConfig,
         root: str,
         train: bool = True,
         img_dim: int = 3,
         mri_type: str | list[str] = "T1wCE",
     ):
         super(BraTClassificationDataset, self).__init__()
+        self._cfg = cfg
+
         self._root = root
         self._train = train
         self._img_dim = img_dim
         self._mri_type = mri_type
         self._check_mri_type()
 
-        self._img_dir = os.path.join(root, "train" if self._train else "test")
+        self._split = self._cfg.split
+
+        # self._img_dir = os.path.join(root, "train" if self._train else "test")
+        self._img_dir = os.path.join(root, "train")
 
         if self._img_dim == 2:
             from brain_tumor.utils.presets import SimpleTransform2D
@@ -61,6 +71,9 @@ class BraTClassificationDataset(Dataset):
         self._items, self._labels = self._prepare_data()
 
     def _check_mri_type(self):
+        if isinstance(self._mri_type, ListConfig):
+            self._mri_type = list(self._mri_type)
+
         if isinstance(self._mri_type, list):
             assert set(self._mri_type) <= set(
                 self.MRI_TYPES
@@ -93,22 +106,31 @@ class BraTClassificationDataset(Dataset):
             raise NotImplementedError
 
     def _prepare_data(self):
+        items, labels = [], []
+
+        val_ids = json.load(
+            open(
+                f"{self._split.root}/val_ids_seed{self._split.seed}_ratio{self._split.ratio}.json",
+                "r",
+            )
+        )
         annotations = U.read_csv(os.path.join(self._root, "train_labels.csv"))
 
-        items = [
-            os.path.join(self._img_dir, str(data_id).zfill(5)) for data_id in annotations["BraTS21ID"]
-        ]
-
-        labels = [int(ann) for ann in annotations["MGMT_value"]]
+        for i, data_id in enumerate(annotations["BraTS21ID"]):
+            if data_id not in self.EXCLUDE_INDEXES:
+                data_id_str = str(data_id).zfill(5)
+                if (self._train and data_id_str not in val_ids) or (
+                    not self._train and data_id_str in val_ids
+                ):
+                    items.append(os.path.join(self._img_dir, data_id_str))
+                    labels.append(int(annotations["MGMT_value"][i]))
 
         return items, labels
 
     def _load_img_3d(self, path):
         slices_list, ids_list = [], []
         for mri_type in self._mri_type:
-            slices, ids = U.read_dicom_dir(
-                os.path.join(path, mri_type)
-            )
+            slices, ids = U.read_dicom_dir(os.path.join(path, mri_type))
             slices_list.append(slices)
             ids_list.append(ids)
 
@@ -120,11 +142,14 @@ class BraTClassificationDataset(Dataset):
         pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     dataset = BraTClassificationDataset(
-        root='/ssd3/Benchmark/haoyi/BRaTS2021/classification',
-        mri_type=["FLAIR"], # , "T2w", "T1wCE"],
-        )
+        cfg=DictConfig(
+            {"split": {"root": "./train_val_splits", "seed": 42, "ratio": 0.1}}
+        ),
+        root="/ssd3/Benchmark/haoyi/BRaTS2021/classification",
+        mri_type=["FLAIR"],  # , "T2w", "T1wCE"],
+    )
 
     img, label = dataset.__getitem__(0)
     print(img.shape)
