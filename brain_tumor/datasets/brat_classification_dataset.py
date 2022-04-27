@@ -57,10 +57,26 @@ class BraTClassificationDataset(Dataset):
         # self._img_dir = os.path.join(root, "train" if self._train else "test")
         self._img_dir = os.path.join(root, "train")
 
+        if "aug" in self._cfg:
+            rot = self._cfg["aug"]["rot_factor"]
+            rot_p = self._cfg["aug"]["rot_p"]
+            scale_factor = self._cfg["aug"]["scale_factor"]
+        else:
+            rot = 0.0
+            rot_p = 0.0
+            scale_factor = 0.0
+
         if self._img_dim == 2:
             from brain_tumor.utils.presets import SimpleTransform2D
 
-            self.transformation = SimpleTransform2D()
+            self.transformation = SimpleTransform2D(
+                input_size=self._cfg.input_size,
+                rot=rot,
+                rot_p=rot_p,
+                scale_factor=scale_factor,
+                task="classification",
+                train=self._train,
+            )
         elif self._img_dim == 3:
             from brain_tumor.utils.presets import SimpleTransform3D
 
@@ -93,9 +109,9 @@ class BraTClassificationDataset(Dataset):
 
         img = self._load_img(img_path)
 
-        img, label = self.transformation(img, label)
+        img, target, target_weight = self.transformation(img, label)
 
-        return img, label
+        return img, target, target_weight
 
     def _load_img(self, path):
         if self._img_dim == 2:
@@ -106,6 +122,15 @@ class BraTClassificationDataset(Dataset):
             raise NotImplementedError
 
     def _prepare_data(self):
+        if self._img_dim == 2:
+            return self._prepare_data_2d()
+        elif self._img_dim == 3:
+            return self._prepare_data_3d()
+
+    def _prepare_data_2d(self):
+        pass
+
+    def _prepare_data_3d(self):
         items, labels = [], []
 
         val_ids = json.load(
@@ -130,7 +155,7 @@ class BraTClassificationDataset(Dataset):
     def _load_img_3d(self, path):
         slices_list, ids_list = [], []
         for mri_type in self._mri_type:
-            slices, ids = U.read_dicom_dir(os.path.join(path, mri_type))
+            slices, ids = U.read_dicom_dir(os.path.join(path, mri_type), normalize=True)
             slices_list.append(slices)
             ids_list.append(ids)
 
