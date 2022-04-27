@@ -147,3 +147,4 @@ demos
 ./data/
 data
 exp/
+*.zip
