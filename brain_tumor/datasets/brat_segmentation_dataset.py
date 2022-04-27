@@ -54,14 +54,14 @@ class BraTSegmentationDataset(Dataset):
 
         self._split = self._cfg.split
 
-        if "aug" in self._cfg:
-            rot = self._cfg["aug"]["rot_factor"]
-            rot_p = self._cfg["aug"]["rot_p"]
-            scale_factor = self._cfg["aug"]["scale_factor"]
+        if 'aug' in self._cfg:
+            rot = self._cfg['aug']['rot_factor']
+            rot_p = self._cfg['aug']['rot_p']
+            scale_factor = self._cfg['aug']['scale_factor']
         else:
-            rot = 0.0
-            rot_p = 0.0
-            scale_factor = 0.0
+            rot = 0.
+            rot_p = 0.
+            scale_factor = 0.
 
         if self._img_dim == 2:
             from brain_tumor.utils.presets import SimpleTransform2D
@@ -71,9 +71,8 @@ class BraTSegmentationDataset(Dataset):
                 rot=rot,
                 rot_p=rot_p,
                 scale_factor=scale_factor,
-                task="segmentation",
-                train=self._train,
-            )
+                task='segmentation',
+                train=self._train,)
         elif self._img_dim == 3:
             from brain_tumor.utils.presets import SimpleTransform3D
 
@@ -103,9 +102,9 @@ class BraTSegmentationDataset(Dataset):
 
         img, label = self._load_img(img_path)
 
-        img, label = self.transformation(img, label)
+        img, target, target_weight = self.transformation(img, label)
 
-        return img, label
+        return img, target, target_weight
 
     def _load_img(self, path):
         if self._img_dim == 2:
