@@ -65,16 +65,15 @@ def analyse(ClassificationDataset, threshold=0):
 
 
 if __name__ == "__main__":
-    
+
     sns.set()
-    '''dataset = b_c_d.BraTClassificationDataset(
+    """dataset = b_c_d.BraTClassificationDataset(
         root="H:\hw\BrainTumor\data\classification",
         mri_type=["T1wCE" ],  # "FLAIR", "T1w" , "T2w", "T1wCE"],
-    )'''
+    )"""
 
     dataset = b_s_d.BraTSegmentationDataset(
-        root='H:\hw\BrainTumor\data\segmentation',
-        mri_type=["T1wCE"], # "FLAIR",'T1w', "T2w", "T1wCE"],
-        )
+        root="H:\hw\BrainTumor\data\segmentation",
+        mri_type=["T1wCE"],  # "FLAIR",'T1w', "T2w", "T1wCE"],
+    )
     analyse(dataset)
-
