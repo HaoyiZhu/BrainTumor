@@ -1,3 +1,7 @@
+"""
+IO related utils.
+"""
+
 import os
 
 import numpy as np
@@ -28,15 +32,16 @@ def read_nib(filename):
     return np.asarray(nib.load(filename).dataobj)
 
 
-def read_dicom_dir(path):
+def read_dicom_dir(path, normalize=False):
     slices = []
     idxes = []
 
     for fn in os.listdir(path):
-        slices.append(read_dicom(os.path.join(path, fn)))
+        slices.append(read_dicom(os.path.join(path, fn), normalize=normalize))
         idxes.append(int(fn.split(".")[0].split("-")[-1]))
 
     return slices, idxes
+
 
 def slices_to_3d_img(slices, ids=None):
     return np.concatenate([np.array(s) for s in slices], axis=0)

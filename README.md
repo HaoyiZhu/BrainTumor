@@ -11,7 +11,7 @@ Segmentation: [RSNA-ASNR-MICCAI Brain Tumor Segmentation (BraTS)](https://www.ka
 ```bash
 # 1. Create a conda virtual enviornment.
 conda create -n brain_tumor python=3.9 -y
-conda create brain_tumor
+conda activate brain_tumor
 
 # 2. Install PyTorch >= 1.10 according to your CUDA version. For example:
 pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu113
@@ -36,6 +36,10 @@ kaggle datasets download -d dschettler8845/brats-2021-task1
 Finally, extract the datasets to `./data` and make them look like this:
 
 ```
+|-- brain_tumor
+|-- configs
+|-- scripts
+|-- train_val_splits
 |-- data
 `-- |-- classification
     |   |-- sample_submission.csv
