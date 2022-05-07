@@ -148,3 +148,5 @@ demos
 data
 exp/
 *.zip
+try.out
+.gitignore

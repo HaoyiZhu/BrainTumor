@@ -128,7 +128,29 @@ class BraTClassificationDataset(Dataset):
             return self._prepare_data_3d()
 
     def _prepare_data_2d(self):
-        pass
+        items, labels = [], []
+
+        val_ids = json.load(
+            open(
+                f"{self._split.root}/val_ids_seed{self._split.seed}_ratio{self._split.ratio}.json",
+                "r",
+            )
+        )
+        annotations = U.read_csv(os.path.join(self._root, "train_labels.csv"))
+
+        for i, data_id in enumerate(annotations["BraTS21ID"]):
+            if data_id not in self.EXCLUDE_INDEXES:
+                data_id_str = str(data_id).zfill(5)
+                if (self._train and data_id_str not in val_ids) or (
+                    not self._train and data_id_str in val_ids
+                ):
+                    for mri_type in self._mri_type:
+                        parent_img_path = os.path.join(self._img_dir, data_id_str, mri_type)
+                        for img_path in os.listdir(parent_img_path):
+                            items.append(os.path.join(parent_img_path, img_path))
+                            labels.append(int(annotations["MGMT_value"][i]))
+
+        return items, labels
 
     def _prepare_data_3d(self):
         items, labels = [], []
@@ -155,7 +177,7 @@ class BraTClassificationDataset(Dataset):
     def _load_img_3d(self, path):
         slices_list, ids_list = [], []
         for mri_type in self._mri_type:
-            slices, ids = U.read_dicom_dir(os.path.join(path, mri_type), normalize=True)
+            slices, ids = U.read_3d_dicom_dir(os.path.join(path, mri_type), normalize=True)
             slices_list.append(slices)
             ids_list.append(ids)
 
@@ -164,8 +186,10 @@ class BraTClassificationDataset(Dataset):
         return img
 
     def _load_img_2d(self, path):
-        pass
+        slices = U.read_2d_dicom_dir(path, normalize=True)
+        img = U.slices_to_2d_img(slices)
 
+        return img
 
 if __name__ == "__main__":
     dataset = BraTClassificationDataset(

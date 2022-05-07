@@ -32,7 +32,12 @@ def read_nib(filename):
     return np.asarray(nib.load(filename).dataobj)
 
 
-def read_dicom_dir(path, normalize=False):
+def read_2d_dicom_dir(path, normalize=False):
+    slices = read_dicom(path, normalize=normalize)
+    return slices
+
+
+def read_3d_dicom_dir(path, normalize=False):
     slices = []
     idxes = []
 
@@ -41,6 +46,10 @@ def read_dicom_dir(path, normalize=False):
         idxes.append(int(fn.split(".")[0].split("-")[-1]))
 
     return slices, idxes
+
+
+def slices_to_2d_img(slices, ids=None):
+    return np.array(slices)
 
 
 def slices_to_3d_img(slices, ids=None):
