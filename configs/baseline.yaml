@@ -39,11 +39,11 @@ loss:
   
 train:
   batch_size: 16
-  num_workers: 4
+  num_workers: 1
   lr: 1e-3
   weight_decay: 1e-2
   max_epochs: 100
-  devices: 2
+  devices: 1
   strategy: "ddp"
   scheduler:
     lr_cosine_min: 1e-5

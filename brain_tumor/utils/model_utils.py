@@ -33,10 +33,7 @@ def _trim_state_dict(state_dict):
     if "model" in state_dict:
         state_dict = state_dict["model"]
     ret_state_dict = OrderedDict()
-    for (
-        key,
-        value,
-    ) in state_dict.items():
+    for (key, value,) in state_dict.items():
         if key.startswith("model"):
             key = key[len("model.") :]
         ret_state_dict[key] = value
