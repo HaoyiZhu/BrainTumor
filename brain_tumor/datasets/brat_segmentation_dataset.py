@@ -187,12 +187,17 @@ class BraTSegmentationDataset(Dataset):
 if __name__ == "__main__":
     dataset = BraTSegmentationDataset(
         cfg=DictConfig(
-            {"split": {"root": "./train_val_splits", "seed": 42, "ratio": 0.1}}
+            {
+                "split": {"root": "./train_val_splits", "seed": 42, "ratio": 0.1},
+                "input_size": [128, 128],
+            }
         ),
         root="/ssd3/Benchmark/haoyi/BRaTS2021/segmentation",
-        mri_type=["T1wCE"],  # "FLAIR", "T2w", "T1wCE"],
+        mri_type=["FLAIR"],  # , "T2w", "T1wCE"],
+        img_dim=2,
     )
 
-    img, label = dataset.__getitem__(0)
+    img, label, target_weight = dataset.__getitem__(0)
     print(img.shape)
-    print(label.shape)
+    print(label)
+    print(target_weight.shape)
