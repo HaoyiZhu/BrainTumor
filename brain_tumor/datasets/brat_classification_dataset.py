@@ -145,7 +145,9 @@ class BraTClassificationDataset(Dataset):
                     not self._train and data_id_str in val_ids
                 ):
                     for mri_type in self._mri_type:
-                        parent_img_path = os.path.join(self._img_dir, data_id_str, mri_type)
+                        parent_img_path = os.path.join(
+                            self._img_dir, data_id_str, mri_type
+                        )
                         for img_path in os.listdir(parent_img_path):
                             items.append(os.path.join(parent_img_path, img_path))
                             labels.append(int(annotations["MGMT_value"][i]))
@@ -177,7 +179,9 @@ class BraTClassificationDataset(Dataset):
     def _load_img_3d(self, path):
         slices_list, ids_list = [], []
         for mri_type in self._mri_type:
-            slices, ids = U.read_3d_dicom_dir(os.path.join(path, mri_type), normalize=True)
+            slices, ids = U.read_3d_dicom_dir(
+                os.path.join(path, mri_type), normalize=True
+            )
             slices_list.append(slices)
             ids_list.append(ids)
 
@@ -191,15 +195,21 @@ class BraTClassificationDataset(Dataset):
 
         return img
 
+
 if __name__ == "__main__":
     dataset = BraTClassificationDataset(
         cfg=DictConfig(
-            {"split": {"root": "./train_val_splits", "seed": 42, "ratio": 0.1}}
+            {
+                "split": {"root": "./train_val_splits", "seed": 42, "ratio": 0.1},
+                "input_size": [128, 128],
+            }
         ),
         root="/ssd3/Benchmark/haoyi/BRaTS2021/classification",
         mri_type=["FLAIR"],  # , "T2w", "T1wCE"],
+        img_dim=2,
     )
 
-    img, label = dataset.__getitem__(0)
+    img, label, target_weight = dataset.__getitem__(0)
     print(img.shape)
     print(label)
+    print(target_weight.shape)
