@@ -24,21 +24,18 @@ dataset:
       scale_factor: 0.3
 
 model:
-  type: resnet_18_3d
+  type: resnet_50_2d
   pretrained: ""
   args:
-    n_outputs: 2
-    zero_init_residual: True
-    n_features: 1
-
+    num_classes: 2
 
 loss:
-  type: CrossEntropy
+  task: ${dataset.task}
   args:
     reduction: "mean"
   
 train:
-  batch_size: 16
+  batch_size: 32
   num_workers: 1
   lr: 1e-3
   weight_decay: 1e-2
@@ -48,7 +45,7 @@ train:
   scheduler:
     lr_cosine_min: 1e-5
     lr_cosine_epochs: ${train.max_epochs}
-    lr_cosine_warmup_epochs: 5
+    lr_cosine_warmup_epochs: 0
 
 checkpoint:
   monitor: "val_acc"

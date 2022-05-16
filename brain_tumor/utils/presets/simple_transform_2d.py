@@ -54,7 +54,7 @@ class SimpleTransform2D(object):
 
     def _target_generator_classification(self, label):
         target = torch.LongTensor([label])
-        target_weight = torch.FloatTensor([1.0])
+        target_weight = torch.LongTensor([1.0])
 
         return target, target_weight
 

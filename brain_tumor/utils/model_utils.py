@@ -1,6 +1,6 @@
 import torch
-import brain_tumor.losses as losses
 import brain_tumor.models as models
+from brain_tumor.criterion import Criterion
 
 
 def build_model(cfg):
@@ -8,7 +8,16 @@ def build_model(cfg):
 
 
 def build_loss(cfg):
-    return losses.names[cfg.type](**cfg.args)
+    return Criterion(cfg.task, **cfg.args)
+
+
+def calc_accuracy(preds, labels):
+    preds = preds.cpu().data.numpy()
+    labels = labels.cpu().data.numpy()
+
+    preds = preds.argmax(-1)
+
+    return (preds == labels).mean()
 
 
 def load_checkpoint(model, checkpoint, strict=True):
@@ -33,7 +42,10 @@ def _trim_state_dict(state_dict):
     if "model" in state_dict:
         state_dict = state_dict["model"]
     ret_state_dict = OrderedDict()
-    for (key, value,) in state_dict.items():
+    for (
+        key,
+        value,
+    ) in state_dict.items():
         if key.startswith("model"):
             key = key[len("model.") :]
         ret_state_dict[key] = value

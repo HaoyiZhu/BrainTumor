@@ -73,7 +73,14 @@ Finally, extract the datasets to `./data` and make them look like this:
 
 ## Training
 
-TBD
+```bash
+# Choose one or multiple gpus
+# Number of gpus should match with ${train.devices} in config
+# You can simply overwrite the parameters in config by xxx=xxx in command
+CUDA_VISIBLE_DEVICES=0,1 python scripts/train.py train.devices=2
+```
+
+
 
 ## Validation
 

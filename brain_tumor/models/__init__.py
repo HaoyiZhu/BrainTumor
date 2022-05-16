@@ -1,3 +1,11 @@
+from .resnet_2d import (
+    resnet_18_2d,
+    resnet_34_2d,
+    resnet_50_2d,
+    resnet_101_2d,
+    resnet_152_2d,
+)
+
 from .resnet_3d import (
     resnet_18_3d,
     resnet_34_3d,
@@ -10,6 +18,11 @@ from .resnet_3d import (
 
 
 names = {
+    "resnet_18_2d": resnet_18_2d,
+    "resnet_34_2d": resnet_34_2d,
+    "resnet_50_2d": resnet_50_2d,
+    "resnet_101_2d": resnet_101_2d,
+    "resnet_152_2d": resnet_152_2d,
     "resnet_18_3d": resnet_18_3d,
     "resnet_34_3d": resnet_34_3d,
     "resnet_50_3d": resnet_50_3d,
