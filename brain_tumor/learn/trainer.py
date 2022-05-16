@@ -14,7 +14,12 @@ import brain_tumor.utils as U
 
 
 class BrainTumorDataModule(pl.LightningDataModule):
-    def __init__(self, cfg: DictConfig, batch_size: int, num_workers: int = 0,) -> None:
+    def __init__(
+        self,
+        cfg: DictConfig,
+        batch_size: int,
+        num_workers: int = 0,
+    ) -> None:
         super().__init__()
         self.cfg = cfg
 
@@ -80,7 +85,11 @@ class BrainTumorDataModule(pl.LightningDataModule):
 
 
 class BrainTumor(pl.LightningModule):
-    def __init__(self, cfg: DictConfig, lr_cosine_steps_per_epoch: int = 1,) -> None:
+    def __init__(
+        self,
+        cfg: DictConfig,
+        lr_cosine_steps_per_epoch: int = 1,
+    ) -> None:
         super().__init__()
         self.cfg = cfg
 
@@ -141,7 +150,8 @@ class BrainTumor(pl.LightningModule):
         print("Cosine annealing with warmup restart")
         print(scheduler_kwargs)
         scheduler = torch.optim.lr_scheduler.LambdaLR(
-            optimizer=optimizer, lr_lambda=U.CosineScheduler(**scheduler_kwargs),
+            optimizer=optimizer,
+            lr_lambda=U.CosineScheduler(**scheduler_kwargs),
         )
         return [optimizer], [{"scheduler": scheduler, "interval": "step"}]
 
