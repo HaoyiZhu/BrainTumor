@@ -76,7 +76,8 @@ Finally, extract the datasets to `./data` and make them look like this:
 ```bash
 # Choose one or multiple gpus
 # Number of gpus should match with ${train.devices} in config
-CUDA_VISIBLE_DEVICES=0,1 python scripts/train.py
+# You can simply overwrite the parameters in config by xxx=xxx in command
+CUDA_VISIBLE_DEVICES=0,1 python scripts/train.py train.devices=2
 ```
 
 
