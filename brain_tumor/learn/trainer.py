@@ -109,7 +109,10 @@ class BrainTumor(pl.LightningModule):
         return self.model(inputs)
 
     def criterion(self, outputs, labels, label_masks):
-        pass
+        loss = self.loss(outputs * label_masks, labels * label_masks)
+        acc = U.calc_accuracy(outputs * label_masks, labels * label_masks)
+
+        return loss, acc
 
     def training_step(self, batch, batch_idx):
         inputs, labels, label_masks = batch

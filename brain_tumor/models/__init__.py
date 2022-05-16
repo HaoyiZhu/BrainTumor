@@ -3,7 +3,7 @@ from .resnet_2d import (
     resnet_34_2d,
     resnet_50_2d,
     resnet_101_2d,
-    resnet_152_2d
+    resnet_152_2d,
 )
 
 from .resnet_3d import (

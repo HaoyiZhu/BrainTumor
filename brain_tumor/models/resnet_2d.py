@@ -1,7 +1,7 @@
 """
-3D ResNet models in Pytorch.
+2D ResNet models in Pytorch.
 
-Ref: https://github.com/guwangtu/pytorch-cifar100/blob/master/models/resnet.py
+Ref: https://github.com/weiaicunzai/pytorch-cifar100/blob/master/models/resnet.py
 """
 
 import torch
@@ -118,7 +118,7 @@ class ResNet(nn.Module):
         self.in_channels = 64
 
         self.conv1 = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, padding=1, bias=False),
+            nn.Conv2d(1, 64, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
         )
@@ -167,26 +167,26 @@ class ResNet(nn.Module):
         return output
 
 
-def resnet_18_2d():
+def resnet_18_2d(**kwargs):
     """return a ResNet 18 object"""
-    return ResNet(BasicBlock, [2, 2, 2, 2])
+    return ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
 
 
-def resnet_34_2d():
+def resnet_34_2d(**kwargs):
     """return a ResNet 34 object"""
-    return ResNet(BasicBlock, [3, 4, 6, 3])
+    return ResNet(BasicBlock, [3, 4, 6, 3], **kwargs)
 
 
-def resnet_50_2d():
+def resnet_50_2d(**kwargs):
     """return a ResNet 50 object"""
-    return ResNet(BottleNeck, [3, 4, 6, 3])
+    return ResNet(BottleNeck, [3, 4, 6, 3], **kwargs)
 
 
-def resnet_101_2d():
+def resnet_101_2d(**kwargs):
     """return a ResNet 101 object"""
-    return ResNet(BottleNeck, [3, 4, 23, 3])
+    return ResNet(BottleNeck, [3, 4, 23, 3], **kwargs)
 
 
-def resnet_152_2d():
+def resnet_152_2d(**kwargs):
     """return a ResNet 152 object"""
-    return ResNet(BottleNeck, [3, 8, 36, 3])
+    return ResNet(BottleNeck, [3, 8, 36, 3], **kwargs)
