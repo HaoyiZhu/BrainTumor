@@ -45,7 +45,7 @@ train:
   scheduler:
     lr_cosine_min: 1e-5
     lr_cosine_epochs: ${train.max_epochs}
-    lr_cosine_warmup_epochs: 5
+    lr_cosine_warmup_epochs: 0
 
 checkpoint:
   monitor: "val_acc"
