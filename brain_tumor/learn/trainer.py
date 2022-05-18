@@ -156,7 +156,7 @@ class BrainTumor(pl.LightningModule):
             optimizer=optimizer,
             lr_lambda=U.CosineScheduler(**scheduler_kwargs),
         )
-        return [optimizer], [{"scheduler": scheduler, "interval": "step"}]
+        return [optimizer], [{"scheduler": scheduler, "interval": "epoch"}]
 
 
 class BrainTumorTrainer:
