@@ -51,7 +51,7 @@ checkpoint:
   monitor: "val_acc"
   mode: "max"
   save_last: true
-  save_top_k: 5
+  save_top_k: 3
   filename: "{epoch:02d}-{val_acc:.4f}"
 
 hydra:
