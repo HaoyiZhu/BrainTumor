@@ -8,3 +8,4 @@ imageio
 pytorch-lightning
 pydicom
 nibabel
+einops
