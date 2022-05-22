@@ -16,15 +16,15 @@ dataset:
     seed: 42
     ratio: 0.1
   input_size:
-    - 128
-    - 128
+    - 64
+    - 64
   aug:
       rot_factor: 40
       rot_p: 0.6
       scale_factor: 0.3
 
 model:
-  type: resnet_50_2d
+  type: convnext_base
   pretrained: ""
   args:
     num_classes: 2
@@ -35,7 +35,7 @@ loss:
     reduction: "mean"
   
 train:
-  batch_size: 32
+  batch_size: 256
   num_workers: 1
   lr: 1e-3
   weight_decay: 1e-2

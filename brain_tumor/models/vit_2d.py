@@ -131,6 +131,5 @@ class ViT(nn.Module):
         x = self.to_latent(x)
         return self.mlp_head(x)
 
-def my_vit():
-    return ViT(512, patch_size=32, num_classes=2, dim=1024, depth=6, heads=16, mlp_dim=2048, pool = 'cls', channels = 3, dim_head = 64, dropout = 0., emb_dropout = 0.)
-        
+def vit_base(**kwargs):
+    return ViT(image_size=512, patch_size=32, num_classes=2, dim=1024, depth=6, heads=16, mlp_dim=2048, pool = 'cls', channels = 1, dim_head = 64, dropout = 0., emb_dropout = 0.)
