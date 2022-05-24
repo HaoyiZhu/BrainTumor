@@ -26,7 +26,7 @@ dataset:
   max_slice_num: 128 # only for 2.5d mode
 
 model:
-  type: convnext_base
+  type: resnet_50_2d
   pretrained: ""
   args:
     num_classes: 2
