@@ -19,15 +19,22 @@ dataset:
     - 128
     - 128
   aug:
-      rot_factor: 40
-      rot_p: 0.6
-      scale_factor: 0.3
+      rot_factor: 0
+      rot_p: 0.0
+      scale_factor: 0.0
+  max_slice_num: 128 # only for 2.5d mode
 
 model:
   type: resnet_50_2d
   pretrained: ""
   args:
     num_classes: 2
+  mlp_input_dim: 256 # for 2.5d mode
+  mlp_args: # only for 2.5d mode
+    input_dim: ${model.mlp_input_dim}
+    hidden_dim: 128
+    output_dim: 2
+    hidden_depth: 2
 
 loss:
   task: ${dataset.task}
@@ -36,14 +43,14 @@ loss:
   
 train:
   batch_size: 32
-  num_workers: 1
-  lr: 1e-3
+  num_workers: 8
+  lr: 1e-4
   weight_decay: 1e-2
   max_epochs: 100
-  devices: 1
+  devices: 4
   strategy: "ddp"
   scheduler:
-    lr_cosine_min: 1e-5
+    lr_cosine_min: 1e-6
     lr_cosine_epochs: ${train.max_epochs}
     lr_cosine_warmup_epochs: 0
 

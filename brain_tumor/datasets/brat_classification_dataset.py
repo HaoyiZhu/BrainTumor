@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import os
 import json
+import numpy as np
+import torch
 from omegaconf import DictConfig, ListConfig
 from torch.utils.data import Dataset
 
@@ -40,7 +42,7 @@ class BraTClassificationDataset(Dataset):
         cfg: DictConfig,
         root: str,
         train: bool = True,
-        img_dim: int = 3,
+        img_dim: int | float = 2,
         mri_type: str | list[str] = "T1wCE",
     ):
         super(BraTClassificationDataset, self).__init__()
@@ -53,6 +55,8 @@ class BraTClassificationDataset(Dataset):
         self._check_mri_type()
 
         self._split = self._cfg.split
+        if self._img_dim == 2.5:
+            self._max_slice_num = self._cfg.max_slice_num
 
         # self._img_dir = os.path.join(root, "train" if self._train else "test")
         self._img_dir = os.path.join(root, "train")
@@ -70,6 +74,17 @@ class BraTClassificationDataset(Dataset):
             from brain_tumor.utils.presets import SimpleTransform2D
 
             self.transformation = SimpleTransform2D(
+                input_size=self._cfg.input_size,
+                rot=rot,
+                rot_p=rot_p,
+                scale_factor=scale_factor,
+                task="classification",
+                train=self._train,
+            )
+        elif self._img_dim == 2.5:
+            from brain_tumor.utils.presets import SimpleTransform25D
+
+            self.transformation = SimpleTransform25D(
                 input_size=self._cfg.input_size,
                 rot=rot,
                 rot_p=rot_p,
@@ -116,6 +131,8 @@ class BraTClassificationDataset(Dataset):
     def _load_img(self, path):
         if self._img_dim == 2:
             return self._load_img_2d(path)
+        elif self._img_dim == 2.5:
+            return self._load_img_25d(path)
         elif self._img_dim == 3:
             return self._load_img_3d(path)
         else:
@@ -124,8 +141,8 @@ class BraTClassificationDataset(Dataset):
     def _prepare_data(self):
         if self._img_dim == 2:
             return self._prepare_data_2d()
-        elif self._img_dim == 3:
-            return self._prepare_data_3d()
+        elif self._img_dim == 2.5 or self._img_dim == 3:
+            return self._prepare_data_gt2d()
 
     def _prepare_data_2d(self):
         items, labels = [], []
@@ -154,7 +171,8 @@ class BraTClassificationDataset(Dataset):
 
         return items, labels
 
-    def _prepare_data_3d(self):
+    def _prepare_data_gt2d(self):
+        # greater than 2d (2.5d and 3d)
         items, labels = [], []
 
         val_ids = json.load(
@@ -195,21 +213,88 @@ class BraTClassificationDataset(Dataset):
 
         return img
 
+    def _load_img_25d(self, path):
+        # load images for 2.5d
+        assert isinstance(self._mri_type, str) or (
+            isinstance(self._mri_type, list) and len(self._mri_type) == 1
+        ), f"2.5d mode only support single mri type, but got {self._mri_type}."
+
+        sub_path = (
+            self._mri_type if isinstance(self._mri_type, str) else self._mri_type[0]
+        )
+        path = os.path.join(path, sub_path)
+
+        imgs = []
+        for fn in os.listdir(path):
+            slices = U.read_2d_dicom_dir(os.path.join(path, fn), normalize=True)
+            img = U.slices_to_2d_img(slices)
+            imgs.append(img)
+
+        num_slices = len(imgs)
+        if self._train and num_slices > self._max_slice_num:
+            start_slice_idx = np.random.randint(0, num_slices - self._max_slice_num)
+            imgs = imgs[start_slice_idx : start_slice_idx + self._max_slice_num]
+
+        return imgs
+
+    def _collate_fn(self, batch):
+        imgs, targets, target_weights = list(zip(*batch))
+
+        targets = torch.stack(targets)
+        target_weights = torch.stack(target_weights)
+
+        if self._img_dim == 2.5:
+            num_instances = len(imgs)
+            instance_ids = torch.cat(
+                [
+                    torch.LongTensor([idx] * imgs[idx].shape[0])
+                    for idx in range(num_instances)
+                ]
+            )
+
+            imgs = torch.cat(imgs, dim=0)
+
+            return imgs, instance_ids, targets, target_weights
+        else:
+            imgs = torch.stack(imgs)
+
+            return imgs, targets, target_weights
+
 
 if __name__ == "__main__":
+    img_dim = 2
+
     dataset = BraTClassificationDataset(
         cfg=DictConfig(
             {
                 "split": {"root": "./train_val_splits", "seed": 42, "ratio": 0.1},
-                "input_size": [128, 128],
+                "input_size": [64, 64],
+                "max_slice_num": 200,
             }
         ),
         root="/ssd3/Benchmark/haoyi/BRaTS2021/classification",
         mri_type=["FLAIR"],  # , "T2w", "T1wCE"],
-        img_dim=2,
+        img_dim=img_dim,
     )
 
     img, label, target_weight = dataset.__getitem__(0)
     print(img.shape)
     print(label)
     print(target_weight.shape)
+
+    if img_dim == 2.5:
+        from torch.utils.data import DataLoader
+
+        dataloader = DataLoader(
+            dataset,
+            batch_size=1,
+            num_workers=0,
+            shuffle=False,
+            collate_fn=dataset._collate_fn,
+        )
+        for imgs, instance_ids, targets, target_weights in dataloader:
+            print(imgs.shape)
+            # print(instance_ids.shape)
+            # print(targets.shape)
+            # print(target_weights.shape)
+            # break

@@ -6,6 +6,7 @@ from omegaconf import DictConfig, OmegaConf
 
 import torch
 from torch.utils.data import Dataset, DataLoader
+from torch_scatter import scatter
 import pytorch_lightning as pl
 import pytorch_lightning.loggers as pl_loggers
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
@@ -65,6 +66,7 @@ class BrainTumorDataModule(pl.LightningDataModule):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             shuffle=True,
+            collate_fn=self.train_dataset._collate_fn,
         )
 
     def val_dataloader(self) -> DataLoader:
@@ -73,6 +75,7 @@ class BrainTumorDataModule(pl.LightningDataModule):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             shuffle=False,
+            collate_fn=self.val_dataset._collate_fn,
         )
 
     def test_dataloader(self) -> DataLoader:
@@ -81,6 +84,7 @@ class BrainTumorDataModule(pl.LightningDataModule):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             shuffle=False,
+            collate_fn=self.test_dataset._collate_fn,
         )
 
 
@@ -92,6 +96,9 @@ class BrainTumor(pl.LightningModule):
     ) -> None:
         super().__init__()
         self.cfg = cfg
+        self.two_half_dim = cfg.dataset.img_dim == 2.5  # 2.5d input mode
+        if self.two_half_dim:
+            self.batch_size = self.cfg.train.batch_size
 
         self.lr = cfg.train.lr
         self.max_epochs = cfg.train.max_epochs
@@ -101,42 +108,92 @@ class BrainTumor(pl.LightningModule):
         self.lr_cosine_warmup_epochs = cfg.train.scheduler.lr_cosine_warmup_epochs
         self.lr_cosine_steps_per_epoch = lr_cosine_steps_per_epoch
 
-        model = U.build_model(cfg.model)
+        model = U.build_model(cfg)
         self.model = U.load_checkpoint(model, checkpoint=cfg.model.pretrained)
         self.loss = U.build_loss(cfg.loss)
 
-    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        return self.model(inputs)
+    def forward(self, inputs):
+        if not self.two_half_dim:
+            return self.model(inputs)
+        else:
+            inputs, instance_ids = inputs
+            hidden_features = self.model(inputs)
+            mlp_inputs = scatter(
+                hidden_features,
+                instance_ids,
+                dim=0,
+                reduce="max",
+            )
+
+            return self.model.mlp_model(mlp_inputs)
 
     def criterion(self, outputs, labels, label_masks):
-        loss = self.loss(outputs * label_masks, labels * label_masks)
-        acc = U.calc_accuracy(outputs * label_masks, labels * label_masks)
+        loss = self.loss(outputs, labels)
+
+        with torch.no_grad():
+            acc = U.calc_accuracy(outputs, labels)
 
         return loss, acc
 
     def training_step(self, batch, batch_idx):
-        inputs, labels, label_masks = batch
+        if self.two_half_dim:
+            inputs, instance_ids, labels, label_masks = batch
+            outputs = self((inputs, instance_ids))
+        else:
+            inputs, labels, label_masks = batch
+            outputs = self(inputs)
 
-        outputs = self(inputs)
         loss, acc = self.criterion(outputs, labels, label_masks)
 
-        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
-        self.log("train_acc", acc, on_step=True, on_epoch=True, prog_bar=True)
+        if self.two_half_dim:
+            self.log(
+                "train_loss",
+                loss,
+                on_step=True,
+                on_epoch=True,
+                prog_bar=True,
+                batch_size=self.batch_size,
+            )
+            self.log(
+                "train_acc",
+                acc,
+                on_step=True,
+                on_epoch=True,
+                prog_bar=True,
+                batch_size=self.batch_size,
+            )
+        else:
+            self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
+            self.log("train_acc", acc, on_step=True, on_epoch=True, prog_bar=True)
 
         return loss
 
     def validation_step(self, batch, batch_idx):
-        inputs, labels, label_masks = batch
+        if self.two_half_dim:
+            inputs, instance_ids, labels, label_masks = batch
+            outputs = self((inputs, instance_ids))
+        else:
+            inputs, labels, label_masks = batch
+            outputs = self(inputs)
 
-        outputs = self(inputs)
         loss, acc = self.criterion(outputs, labels, label_masks)
 
-        self.log("val_acc", acc, on_step=True, on_epoch=True, prog_bar=True)
+        if self.two_half_dim:
+            self.log(
+                "val_acc",
+                acc,
+                on_step=True,
+                on_epoch=True,
+                prog_bar=True,
+                batch_size=self.batch_size,
+            )
+        else:
+            self.log("val_acc", acc, on_step=True, on_epoch=True, prog_bar=True)
 
         return acc
 
     def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(
+        optimizer = torch.optim.Adam(
             self.model.parameters(), lr=self.lr, weight_decay=self.weight_decay
         )
         # lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -189,15 +246,15 @@ class BrainTumorTrainer:
         )
 
     def create_module(self, cfg) -> pl.LightningModule:
-        # lr_cosine_steps_per_epoch = math.ceil(
-        #     cfg.dataset.length / (cfg.train.devices * cfg.train.batch_size)
-        # )
         return BrainTumor(cfg)
 
     def generate_exp_name(self, cfg):
         if cfg.exp_name is not None:
-            return cfg.exp_name
-        exp_name = cfg.model.type
+            exp_name = cfg.exp_name
+        else:
+            exp_name = ""
+
+        exp_name += cfg.model.type
         exp_name += f"_lr{cfg.train.lr:.0e}".replace("e-0", "e-")
         exp_name += f"_wd{cfg.train.weight_decay:.0e}".replace("e-0", "e-")
         exp_name += f"_lrmin{cfg.train.scheduler.lr_cosine_min:.0e}".replace(
