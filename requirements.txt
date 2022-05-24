@@ -9,3 +9,4 @@ pytorch-lightning
 pydicom
 nibabel
 torch-scatter
+einops
