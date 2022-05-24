@@ -19,9 +19,10 @@ dataset:
     - 128
     - 128
   aug:
-      rot_factor: 0
-      rot_p: 0.0
-      scale_factor: 0.0
+      rot_factor: 40 # rotation degree range in [0, 180] 
+      rot_p: 0.4 # rotation probability
+      scale_factor: 0.3 # scale factor
+      h_flip_p: 0.5
   max_slice_num: 128 # only for 2.5d mode
 
 model:

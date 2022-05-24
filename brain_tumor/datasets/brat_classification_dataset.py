@@ -61,14 +61,16 @@ class BraTClassificationDataset(Dataset):
         # self._img_dir = os.path.join(root, "train" if self._train else "test")
         self._img_dir = os.path.join(root, "train")
 
-        if "aug" in self._cfg:
+        if self._train and "aug" in self._cfg:
             rot = self._cfg["aug"]["rot_factor"]
             rot_p = self._cfg["aug"]["rot_p"]
             scale_factor = self._cfg["aug"]["scale_factor"]
+            h_flip_p = self._cfg["aug"]["h_flip_p"]
         else:
             rot = 0.0
             rot_p = 0.0
             scale_factor = 0.0
+            h_flip_p = 0.0
 
         if self._img_dim == 2:
             from brain_tumor.utils.presets import SimpleTransform2D
@@ -78,6 +80,7 @@ class BraTClassificationDataset(Dataset):
                 rot=rot,
                 rot_p=rot_p,
                 scale_factor=scale_factor,
+                h_flip_p=h_flip_p,
                 task="classification",
                 train=self._train,
             )
