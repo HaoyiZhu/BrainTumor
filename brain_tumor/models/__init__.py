@@ -17,7 +17,7 @@ from .resnet_3d import (
 )
 
 from .mlp import build_mlp
-from .convnext_2d import(
+from .convnext_2d import (
     convnext_tiny,
     convnext_base,
     convnext_small,
@@ -25,7 +25,7 @@ from .convnext_2d import(
     convnext_xlarge,
 )
 
-from .vit_2d import(
+from .vit_2d import (
     vit_base,
 )
 
