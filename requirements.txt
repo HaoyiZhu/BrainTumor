@@ -10,3 +10,4 @@ pydicom
 nibabel
 torch-scatter
 einops
+timm

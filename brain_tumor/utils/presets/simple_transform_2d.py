@@ -69,7 +69,7 @@ class SimpleTransform2D(object):
                             transforms.Resize(self._input_size),
                             transforms.RandomResizedCrop(
                                 self._input_size,
-                                scale=(1 - self._scale_factor, self._scale_factor),
+                                scale=(1 - self._scale_factor, 1),
                             ),
                         ],
                     ),

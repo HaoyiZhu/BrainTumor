@@ -16,8 +16,8 @@ dataset:
     seed: 42
     ratio: 0.1
   input_size:
-    - 64
-    - 64
+    - 128
+    - 128
   aug:
       rot_factor: 40 # rotation degree range in [0, 180] 
       rot_p: 0.4 # rotation probability
