@@ -16,6 +16,17 @@ from .resnet_3d import (
     resnext_101_32x8d_3d,
 )
 
+from .convnext_2d import(
+    convnext_tiny,
+    convnext_base,
+    convnext_small,
+    convnext_large,
+    convnext_xlarge,
+)
+
+from .vit_2d import(
+    vit_base,
+)
 
 names = {
     "resnet_18_2d": resnet_18_2d,
@@ -30,4 +41,10 @@ names = {
     "resnet_152_3d": resnet_152_3d,
     "resnext_50_32x4d_3d": resnext_50_32x4d_3d,
     "resnext_101_32x8d_3d": resnext_101_32x8d_3d,
+    "convnext_tiny": convnext_tiny,
+    "convnext_base": convnext_base,
+    "convnext_small": convnext_small,
+    "convnext_large": convnext_large,
+    "convnext_xlarge": convnext_xlarge,
+    "vit_base": vit_base,
 }
