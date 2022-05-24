@@ -1,5 +1,5 @@
 """
-Pre-process and data augmentation for 2d images.
+Pre-process and data augmentation for 2.5d images.
 
 Author: Haoyi Zhu
 """
@@ -10,14 +10,12 @@ import random
 
 import cv2
 import numpy as np
-import PIL
 import torch
-from torchvision import transforms
 
 from brain_tumor.utils.transforms import im_to_torch, get_affine_transform
 
 
-class SimpleTransform2D(object):
+class SimpleTransform25D(object):
     """
     General class for 2d image pre-process and data augmantation.
 
@@ -43,51 +41,20 @@ class SimpleTransform2D(object):
         rot: int,
         rot_p: float,
         scale_factor: float,
-        h_flip_p: float,
         task: str,
         train: bool,
     ) -> None:
         self._rot = rot
         self._rot_p = rot_p
         self._scale_factor = scale_factor
-        self._h_flip_p = h_flip_p
         self._task = task
 
         self._input_size = input_size
         self._train = train
 
-        if self._train:
-            self._transform = transforms.Compose(
-                [
-                    transforms.ToPILImage(),
-                    transforms.RandomHorizontalFlip(p=self._h_flip_p),
-                    transforms.RandomRotation(
-                        degrees=rot_p, resample=PIL.Image.BILINEAR
-                    ),
-                    transforms.RandomChoice(
-                        [
-                            transforms.Resize(self._input_size),
-                            transforms.RandomResizedCrop(
-                                self._input_size,
-                                scale=(1 - self._scale_factor, self._scale_factor),
-                            ),
-                        ],
-                    ),
-                    transforms.ToTensor(),
-                ]
-            )
-        else:
-            self._transform = transforms.Compose(
-                [
-                    transforms.ToPILImage(),
-                    transforms.Resize(self._input_size),
-                    transforms.ToTensor(),
-                ]
-            )
-
     def _target_generator_classification(self, label):
-        target = torch.tensor([label])
-        target_weight = torch.tensor([1.0])
+        target = torch.LongTensor([label])
+        target_weight = torch.LongTensor([1.0])
 
         return target, target_weight
 
@@ -97,8 +64,42 @@ class SimpleTransform2D(object):
 
         return target, target_weight
 
-    def __call__(self, src, label):
-        img = self._transform(src)
+    def __call__(self, srcs, label):
+        # rescale
+        if self._train:
+            sf = self._scale_factor
+            scale = np.clip(np.random.randn() * sf + 1, 1 - sf, 1 + sf)
+        else:
+            scale = 1.0
+
+        # rotation
+        if self._train:
+            rf = self._rot
+            r = (
+                np.clip(np.random.randn() * rf, -rf * 2, rf * 2)
+                if random.random() <= self._rot_p
+                else 0
+            )
+        else:
+            r = 0
+
+        inp_h, inp_w = self._input_size
+        center = np.zeros((2), dtype=np.float32)
+        center[0] = inp_w * 0.5
+        center[1] = inp_h * 0.5
+        trans = get_affine_transform(center, scale, r, [inp_w, inp_h])
+
+        imgs = []
+
+        for src in srcs:
+            img = cv2.warpAffine(
+                src, trans, (int(inp_w), int(inp_h)), flags=cv2.INTER_LINEAR
+            )
+
+            if len(img.shape) == 2:
+                img = img[..., None]
+
+            imgs.append(im_to_torch(img))
 
         if self._task == "classification":
             target, target_weight = self._target_generator_classification(label)
@@ -107,4 +108,4 @@ class SimpleTransform2D(object):
         else:
             raise NotImplementedError
 
-        return img, target, target_weight
+        return torch.stack(imgs), target, target_weight

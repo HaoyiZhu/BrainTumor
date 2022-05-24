@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class Criterion(nn.Module):
+class Criterion:
     """
     Criterions for brain tumor tasks.
     """
@@ -30,7 +30,8 @@ class Criterion(nn.Module):
         else:
             raise NotImplementedError
 
-    def forward(self, output, target):
+    def __call__(self, output, target):
         if self.task == "classification":
             target = target.squeeze(-1)
+
         return self.loss_fn(output, target)

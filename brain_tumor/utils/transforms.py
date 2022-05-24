@@ -24,8 +24,9 @@ def im_to_torch(img, max_value=255.0):
     """
     img = np.transpose(img, (2, 0, 1))  # C*H*W
     img = to_torch(img).float()
-    if img.max() > 1:
-        img /= max_value
+    # if img.max() > 1:
+    img /= max_value
+
     return img
 
 

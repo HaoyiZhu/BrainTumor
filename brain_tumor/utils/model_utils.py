@@ -4,7 +4,21 @@ from brain_tumor.criterion import Criterion
 
 
 def build_model(cfg):
-    return models.names[cfg.type](**cfg.args)
+    if cfg.dataset.img_dim == 2.5:
+        num_classes = cfg.model.args.get("num_classes", 2)
+        mlp_input_dim = cfg.model.get("mlp_input_dim", 256)
+        cfg.model.args.update({"num_classes": mlp_input_dim})
+
+        model = models.names[cfg.model.type](**cfg.model.args)
+
+        norm_layer = None if cfg.train.batch_size == 1 else "batchnorm"
+        cfg.model.mlp_args.update({"norm_layer": norm_layer})
+        mlp_model = models.names["mlp"](**cfg.model.mlp_args)
+        model.mlp_model = mlp_model
+
+        return model
+    else:
+        return models.names[cfg.model.type](**cfg.model.args)
 
 
 def build_loss(cfg):
@@ -17,7 +31,7 @@ def calc_accuracy(preds, labels):
 
     preds = preds.argmax(-1)
 
-    return (preds == labels).mean()
+    return (preds[:, None] == labels).mean()
 
 
 def load_checkpoint(model, checkpoint, strict=True):
@@ -28,9 +42,9 @@ def load_checkpoint(model, checkpoint, strict=True):
         state_dict = torch.load(checkpoint, map_location=torch.device("cpu"))
         state_dict = _trim_state_dict(state_dict)
         model.load_state_dict(state_dict, strict=strict)
-    # if it's a fp16 model, turn it back.
-    if next(model.parameters()).dtype == torch.float16:
-        model = model.float()
+    # # if it's a fp16 model, turn it back.
+    # if next(model.parameters()).dtype == torch.float16:
+    #     model = model.float()
     return model
 
 
