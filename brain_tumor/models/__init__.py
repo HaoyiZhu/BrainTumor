@@ -25,9 +25,7 @@ from .convnext_2d import (
     convnext_xlarge,
 )
 
-from .vit_2d import (
-    vit_base,
-)
+from .vit_2d import vit_base
 
 names = {
     "resnet_18_2d": resnet_18_2d,

@@ -15,12 +15,7 @@ import brain_tumor.utils as U
 
 
 class BrainTumorDataModule(pl.LightningDataModule):
-    def __init__(
-        self,
-        cfg: DictConfig,
-        batch_size: int,
-        num_workers: int = 0,
-    ) -> None:
+    def __init__(self, cfg: DictConfig, batch_size: int, num_workers: int = 0,) -> None:
         super().__init__()
         self.cfg = cfg
 
@@ -89,11 +84,7 @@ class BrainTumorDataModule(pl.LightningDataModule):
 
 
 class BrainTumor(pl.LightningModule):
-    def __init__(
-        self,
-        cfg: DictConfig,
-        lr_cosine_steps_per_epoch: int = 1,
-    ) -> None:
+    def __init__(self, cfg: DictConfig, lr_cosine_steps_per_epoch: int = 1,) -> None:
         super().__init__()
         self.cfg = cfg
         self.two_half_dim = cfg.dataset.img_dim == 2.5  # 2.5d input mode
@@ -118,12 +109,7 @@ class BrainTumor(pl.LightningModule):
         else:
             inputs, instance_ids = inputs
             hidden_features = self.model(inputs)
-            mlp_inputs = scatter(
-                hidden_features,
-                instance_ids,
-                dim=0,
-                reduce="max",
-            )
+            mlp_inputs = scatter(hidden_features, instance_ids, dim=0, reduce="max",)
 
             return self.model.mlp_model(mlp_inputs)
 
@@ -210,8 +196,7 @@ class BrainTumor(pl.LightningModule):
         print("Cosine annealing with warmup restart")
         print(scheduler_kwargs)
         scheduler = torch.optim.lr_scheduler.LambdaLR(
-            optimizer=optimizer,
-            lr_lambda=U.CosineScheduler(**scheduler_kwargs),
+            optimizer=optimizer, lr_lambda=U.CosineScheduler(**scheduler_kwargs),
         )
         return [optimizer], [{"scheduler": scheduler, "interval": "epoch"}]
 
