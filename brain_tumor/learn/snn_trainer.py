@@ -43,7 +43,9 @@ def batch_accuracy(train_loader, net, num_steps, device):
     return acc / total
 
 
-def snn_train(dataloader, cfg: DictConfig, logger, device, lr_cosine_steps_per_epoch: int = 1):
+def snn_train(
+    dataloader, cfg: DictConfig, logger, device, lr_cosine_steps_per_epoch: int = 1
+):
     lr = cfg.train.lr
     max_epochs = cfg.train.max_epochs
     weight_decay = cfg.train.weight_decay
@@ -84,7 +86,8 @@ def snn_train(dataloader, cfg: DictConfig, logger, device, lr_cosine_steps_per_e
     print("Cosine annealing with warmup restart")
     print(scheduler_kwargs)
     scheduler = torch.optim.lr_scheduler.LambdaLR(
-        optimizer=opt, lr_lambda=U.CosineScheduler(**scheduler_kwargs),
+        optimizer=opt,
+        lr_lambda=U.CosineScheduler(**scheduler_kwargs),
     )
 
     for current_epoch in range(max_epochs):

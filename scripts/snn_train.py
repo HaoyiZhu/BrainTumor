@@ -39,7 +39,9 @@ def main(cfg):
     U.omegaconf_save(cfg, exp_dir, "conf.yaml")
 
     train_data_loader, val_data_loader, test_data_loader = loading_data(
-        cfg=cfg, batch_size=cfg.train.batch_size, num_workers=cfg.train.num_workers,
+        cfg=cfg,
+        batch_size=cfg.train.batch_size,
+        num_workers=cfg.train.num_workers,
     )
     dataloader = [train_data_loader, val_data_loader, test_data_loader]
 
