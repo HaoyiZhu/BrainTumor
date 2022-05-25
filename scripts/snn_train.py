@@ -5,6 +5,7 @@ from omegaconf import OmegaConf
 from brain_tumor.utils.dataloader import loading_data
 from brain_tumor.utils.launcher_utils import generate_exp_name
 import brain_tumor.utils.pytorch_util as ptu
+from brain_tumor.utils import logger
 from brain_tumor.utils.launcher_utils import setup_logger
 from brain_tumor.learn.snn_trainer import snn_train
 import brain_tumor.utils as U
@@ -43,7 +44,7 @@ def main(cfg):
     dataloader = [train_data_loader, val_data_loader, test_data_loader]
 
     setup_logger(log_dir=cfg.exp_root_dir, variant=exp_specs)
-    snn_train(dataloader, cfg, device)
+    snn_train(dataloader, cfg, logger, device)
 
 
 if __name__ == "__main__":

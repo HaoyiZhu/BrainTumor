@@ -53,6 +53,7 @@ train:
   weight_decay: 1e-2
   max_epochs: 100
   num_steps: 10
+  val_num_steps: 1
   devices: 1
   strategy: "ddp"
   scheduler:

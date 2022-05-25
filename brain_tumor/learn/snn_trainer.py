@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from omegaconf import DictConfig
-from brain_tumor.utils import logger
 
 import torch
 import torch.nn as nn
@@ -44,7 +43,7 @@ def batch_accuracy(train_loader, net, num_steps, device):
     return acc / total
 
 
-def snn_train(dataloader, cfg: DictConfig, device, lr_cosine_steps_per_epoch: int = 1):
+def snn_train(dataloader, cfg: DictConfig, logger, device, lr_cosine_steps_per_epoch: int = 1):
     lr = cfg.train.lr
     max_epochs = cfg.train.max_epochs
     weight_decay = cfg.train.weight_decay
@@ -87,7 +86,7 @@ def snn_train(dataloader, cfg: DictConfig, device, lr_cosine_steps_per_epoch: in
     scheduler = torch.optim.lr_scheduler.LambdaLR(
         optimizer=opt, lr_lambda=U.CosineScheduler(**scheduler_kwargs),
     )
-    best_val_loss = None
+
     for current_epoch in range(max_epochs):
         model.train()
         for i, batches in enumerate(train_data_loader):
@@ -105,8 +104,8 @@ def snn_train(dataloader, cfg: DictConfig, device, lr_cosine_steps_per_epoch: in
             opt.step()
 
         acc = batch_accuracy(train_data_loader, model, cfg.train.num_steps, device)
-        logger.record_tabular("train_loss", loss.cpu().data.numpy())
-        logger.record_tabular("train_acc", acc.cpu().data.numpy())
+        logger.record_tabular("train_loss", loss.cpu().data.numpy().item())
+        logger.record_tabular("train_acc", acc)
 
         model.eval()
         with torch.no_grad():
@@ -116,16 +115,13 @@ def snn_train(dataloader, cfg: DictConfig, device, lr_cosine_steps_per_epoch: in
                 inputs = inputs.to(device)
                 labels = labels.to(device)
 
-                spk_rec = forward_pass(model, cfg.train.num_steps, inputs)
+                spk_rec, mem_rec = forward_pass(model, cfg.train.val_num_steps, inputs)
                 val_loss = loss_fn(spk_rec, labels)
             val_acc = batch_accuracy(
-                train_data_loader, model, cfg.train.num_steps, device
+                val_data_loader, model, cfg.train.num_steps, device
             )
-            logger.record_tabular("val_acc", val_acc.cpu().data.numpy())
-            logger.record_tabular("epoch", current_epoch)
-            logger.dump_tabular(with_prefix=False, with_timestamp=False)
-            scheduler.step()
-            # Save the model if the validation loss is the best we've seen so far.
-            if not best_val_loss or val_loss < best_val_loss:
-                logger.save_torch_model(model, "model.pt")
-                best_val_loss = val_loss
+        scheduler.step()
+        logger.record_tabular("val_loss", val_loss.cpu().data.numpy().item())
+        logger.record_tabular("val_acc", val_acc)
+        logger.record_tabular("Epoch", current_epoch)
+        logger.dump_tabular(with_prefix=False, with_timestamp=False)
