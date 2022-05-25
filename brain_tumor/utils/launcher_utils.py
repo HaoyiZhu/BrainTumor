@@ -292,7 +292,10 @@ def run_multi_processes(script_path, variant_paths, num_workers, gpu_id):
         # terminate currently running experiments and not-yet runned experiments
         raise ExperimentError(
             script_path,
-            [*[d["specs"] for d in command_format_dicts], *variant_paths[args_idx:],],
+            [
+                *[d["specs"] for d in command_format_dicts],
+                *variant_paths[args_idx:],
+            ],
         )
 
 

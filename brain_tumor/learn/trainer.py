@@ -15,7 +15,12 @@ import brain_tumor.utils as U
 
 
 class BrainTumorDataModule(pl.LightningDataModule):
-    def __init__(self, cfg: DictConfig, batch_size: int, num_workers: int = 0,) -> None:
+    def __init__(
+        self,
+        cfg: DictConfig,
+        batch_size: int,
+        num_workers: int = 0,
+    ) -> None:
         super().__init__()
         self.cfg = cfg
 
@@ -42,7 +47,7 @@ class BrainTumorDataModule(pl.LightningDataModule):
             self.val_dataset = self.dataset(
                 cfg=self.cfg,
                 root=self.cfg.root,
-                img_dim=2.5, # self.cfg.img_dim,
+                img_dim=2.5,  # self.cfg.img_dim,
                 mri_type=self.cfg.mri_type,
                 train=False,
             )
@@ -50,7 +55,7 @@ class BrainTumorDataModule(pl.LightningDataModule):
             self.test_dataset = self.dataset(
                 cfg=self.cfg,
                 root=self.cfg.root,
-                img_dim=2.5, # self.cfg.img_dim,
+                img_dim=2.5,  # self.cfg.img_dim,
                 mri_type=self.cfg.mri_type,
                 train=False,
             )
@@ -67,7 +72,7 @@ class BrainTumorDataModule(pl.LightningDataModule):
     def val_dataloader(self) -> DataLoader:
         return DataLoader(
             self.val_dataset,
-            batch_size=1, # self.batch_size,
+            batch_size=1,  # self.batch_size,
             num_workers=self.num_workers,
             shuffle=False,
             collate_fn=self.val_dataset._collate_fn,
@@ -76,7 +81,7 @@ class BrainTumorDataModule(pl.LightningDataModule):
     def test_dataloader(self) -> DataLoader:
         return DataLoader(
             self.test_dataset,
-            batch_size=1, # self.batch_size,
+            batch_size=1,  # self.batch_size,
             num_workers=self.num_workers,
             shuffle=False,
             collate_fn=self.test_dataset._collate_fn,
@@ -84,7 +89,11 @@ class BrainTumorDataModule(pl.LightningDataModule):
 
 
 class BrainTumor(pl.LightningModule):
-    def __init__(self, cfg: DictConfig, lr_cosine_steps_per_epoch: int = 1,) -> None:
+    def __init__(
+        self,
+        cfg: DictConfig,
+        lr_cosine_steps_per_epoch: int = 1,
+    ) -> None:
         super().__init__()
         self.cfg = cfg
         self.two_half_dim = cfg.dataset.img_dim == 2.5  # 2.5d input mode
@@ -109,7 +118,12 @@ class BrainTumor(pl.LightningModule):
         else:
             inputs, instance_ids = inputs
             hidden_features = self.model(inputs)
-            mlp_inputs = scatter(hidden_features, instance_ids, dim=0, reduce="max",)
+            mlp_inputs = scatter(
+                hidden_features,
+                instance_ids,
+                dim=0,
+                reduce="max",
+            )
 
             return self.model.mlp_model(mlp_inputs)
 
@@ -177,7 +191,9 @@ class BrainTumor(pl.LightningModule):
                 batch_size=self.batch_size,
             )
         else:
-            self.log("val_acc", acc, on_step=True, on_epoch=True, prog_bar=True, batch_size=1)
+            self.log(
+                "val_acc", acc, on_step=True, on_epoch=True, prog_bar=True, batch_size=1
+            )
 
         return acc
 
@@ -199,7 +215,8 @@ class BrainTumor(pl.LightningModule):
         print("Cosine annealing with warmup restart")
         print(scheduler_kwargs)
         scheduler = torch.optim.lr_scheduler.LambdaLR(
-            optimizer=optimizer, lr_lambda=U.CosineScheduler(**scheduler_kwargs),
+            optimizer=optimizer,
+            lr_lambda=U.CosineScheduler(**scheduler_kwargs),
         )
         return [optimizer], [{"scheduler": scheduler, "interval": "epoch"}]
 
