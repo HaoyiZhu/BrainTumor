@@ -92,6 +92,7 @@ class BraTClassificationDataset(Dataset):
                 rot=rot,
                 rot_p=rot_p,
                 scale_factor=scale_factor,
+                h_flip_p=h_flip_p,
                 task="classification",
                 train=self._train,
             )
@@ -265,7 +266,7 @@ class BraTClassificationDataset(Dataset):
 
 
 if __name__ == "__main__":
-    img_dim = 2
+    img_dim = 2.5
 
     dataset = BraTClassificationDataset(
         cfg=DictConfig(
@@ -273,11 +274,16 @@ if __name__ == "__main__":
                 "split": {"root": "./train_val_splits", "seed": 42, "ratio": 0.1},
                 "input_size": [64, 64],
                 "max_slice_num": 200,
+                "aug": {"rot_factor": 40,
+            "rot_p": 1.0,
+            "scale_factor": 0.3,
+            "h_flip_p": 0.5}
             }
         ),
         root="/ssd3/Benchmark/haoyi/BRaTS2021/classification",
         mri_type=["FLAIR"],  # , "T2w", "T1wCE"],
         img_dim=img_dim,
+        train=True
     )
 
     img, label, target_weight = dataset.__getitem__(0)
