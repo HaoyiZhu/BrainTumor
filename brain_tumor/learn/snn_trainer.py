@@ -8,6 +8,7 @@ import snntorch as snn
 from snntorch import surrogate
 from snntorch import functional as SF
 from snntorch import utils
+from snntorch import backprop
 
 import brain_tumor.utils as U
 
@@ -32,7 +33,7 @@ def batch_accuracy(train_loader, net, num_steps, device):
         net.eval()
 
         train_loader = iter(train_loader)
-        for data, targets, _ in train_loader:
+        for data, targets in train_loader:
             data = data.to(device)
             targets = targets.to(device)
             spk_rec, _ = forward_pass(net, num_steps, data)
@@ -66,7 +67,7 @@ def snn_train(dataloader, cfg: DictConfig, logger, device, lr_cosine_steps_per_e
         nn.MaxPool2d(2),
         snn.Leaky(beta=beta, spike_grad=spike_grad, init_hidden=True),
         nn.Flatten(),
-        nn.Linear(64 * 29 * 29, 2),
+        nn.Linear(64 * 13 * 13, 2),
         snn.Leaky(beta=beta, spike_grad=spike_grad, init_hidden=True, output=True),
     ).to(device)
     loss_fn = SF.ce_rate_loss()
@@ -89,19 +90,21 @@ def snn_train(dataloader, cfg: DictConfig, logger, device, lr_cosine_steps_per_e
 
     for current_epoch in range(max_epochs):
         model.train()
-        for i, batches in enumerate(train_data_loader):
-            opt.zero_grad()
+        # for i, batches in enumerate(train_data_loader):
+        # #     opt.zero_grad()
 
-            inputs, labels, _ = batches
-            labels = labels.squeeze()
-            inputs = inputs.to(device)
-            labels = labels.to(device)
+        #     inputs, labels = batches
+        #     labels = labels.squeeze()
+        # #     inputs = inputs.to(device)
+        # #     labels = labels.to(device)
 
-            spk_rec, mem_rec = forward_pass(model, cfg.train.num_steps, inputs)
+        # #     spk_rec, mem_rec = forward_pass(model, cfg.train.num_steps, inputs)
 
-            loss = loss_fn(spk_rec, labels)
-            loss.backward()
-            opt.step()
+        # #     loss = loss_fn(spk_rec, labels)
+        # #     loss.backward()
+        # #     opt.step()
+        loss = backprop.BPTT(model, train_data_loader, optimizer=opt, criterion=loss_fn, 
+            num_steps=cfg.train.num_steps, time_var=False, device=device)
 
         acc = batch_accuracy(train_data_loader, model, cfg.train.num_steps, device)
         logger.record_tabular("train_loss", loss.cpu().data.numpy().item())
@@ -110,15 +113,17 @@ def snn_train(dataloader, cfg: DictConfig, logger, device, lr_cosine_steps_per_e
         model.eval()
         with torch.no_grad():
             for i, batches in enumerate(val_data_loader):
-                inputs, labels, _ = batches
-                labels = labels.squeeze()
+                inputs, labels = batches
+            #     labels = labels.squeeze()
                 inputs = inputs.to(device)
                 labels = labels.to(device)
 
                 spk_rec, mem_rec = forward_pass(model, cfg.train.val_num_steps, inputs)
                 val_loss = loss_fn(spk_rec, labels)
+            # val_loss = backprop.BPTT(model, val_data_loader, optimizer=opt, criterion=loss_fn, 
+            #     num_steps=cfg.train.val_num_steps, time_var=False, device=device)
             val_acc = batch_accuracy(
-                val_data_loader, model, cfg.train.num_steps, device
+                val_data_loader, model, cfg.train.val_num_steps, device
             )
         scheduler.step()
         logger.record_tabular("val_loss", val_loss.cpu().data.numpy().item())

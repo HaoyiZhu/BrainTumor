@@ -128,8 +128,9 @@ class BraTClassificationDataset(Dataset):
         img = self._load_img(img_path)
 
         img, target, target_weight = self.transformation(img, label)
+        target = target.squeeze()
 
-        return img, target, target_weight
+        return img, target
 
     def _load_img(self, path):
         if self._img_dim == 2:
@@ -241,10 +242,9 @@ class BraTClassificationDataset(Dataset):
         return imgs
 
     def _collate_fn(self, batch):
-        imgs, targets, target_weights = list(zip(*batch))
+        imgs, targets = list(zip(*batch))
 
         targets = torch.stack(targets)
-        target_weights = torch.stack(target_weights)
 
         if self._img_dim == 2.5:
             num_instances = len(imgs)
@@ -257,11 +257,11 @@ class BraTClassificationDataset(Dataset):
 
             imgs = torch.cat(imgs, dim=0)
 
-            return imgs, instance_ids, targets, target_weights
+            return imgs, instance_ids, targets
         else:
             imgs = torch.stack(imgs)
 
-            return imgs, targets, target_weights
+            return imgs, targets
 
 
 if __name__ == "__main__":

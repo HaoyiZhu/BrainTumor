@@ -19,13 +19,13 @@ dataset:
     seed: 42
     ratio: 0.1
   input_size:
-    - 128
-    - 128
+    - 64
+    - 64
   aug:
-      rot_factor: 40 # rotation degree range in [0, 180] 
-      rot_p: 0.4 # rotation probability
-      scale_factor: 0.3 # scale factor
-      h_flip_p: 0.5
+      rot_factor: 10 # rotation degree range in [0, 180] 
+      rot_p: 0.25 # rotation probability
+      scale_factor: 0.1 # scale factor
+      h_flip_p: 0.1
   max_slice_num: 128 # only for 2.5d mode
 
 model:
@@ -47,14 +47,13 @@ loss:
     reduction: "mean"
   
 train:
-  batch_size: 32
-  num_workers: 8
+  batch_size: 128
+  num_workers: 32
   lr: 1e-4
   weight_decay: 1e-2
   max_epochs: 100
   num_steps: 10
   val_num_steps: 1
-  devices: 1
   strategy: "ddp"
   scheduler:
     lr_cosine_min: 1e-6
