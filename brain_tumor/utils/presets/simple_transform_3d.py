@@ -16,9 +16,7 @@ class SimpleTransform3D(object):
     ----------
     """
 
-    def __init__(
-        self,
-    ):
+    def __init__(self,):
         pass
 
     def __call__(self, img, label):

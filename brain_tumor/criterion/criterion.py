@@ -5,8 +5,6 @@ Author: Haoyi Zhu
 """
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
 
 class Criterion:
@@ -15,9 +13,7 @@ class Criterion:
     """
 
     def __init__(
-        self,
-        task,
-        **kwargs,
+        self, task, **kwargs,
     ):
         super(Criterion, self).__init__()
         self.task = task

@@ -93,7 +93,7 @@ class UNet2D(nn.Module):
 
         chs = []
         for i in range(5):
-            chs.append((2**i) * degree)
+            chs.append((2 ** i) * degree)
 
         self.downLayer1 = ConvBlock2d(in_ch, chs[0])
         self.downLayer2 = nn.Sequential(
