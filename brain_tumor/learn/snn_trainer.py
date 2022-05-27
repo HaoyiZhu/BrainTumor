@@ -1,7 +1,6 @@
 from __future__ import annotations
-
-from omegaconf import DictConfig
-
+import yaml
+import argparse
 import torch
 import torch.nn as nn
 import snntorch as snn
@@ -10,7 +9,10 @@ from snntorch import functional as SF
 from snntorch import utils
 from snntorch import backprop
 
-import brain_tumor.utils as U
+from brain_tumor.utils.dataloader import loading_data
+import brain_tumor.utils.pytorch_util as ptu
+from brain_tumor.utils import logger
+from brain_tumor.utils.launcher_util import setup_logger
 
 
 def forward_pass(net, num_steps, data):
@@ -44,18 +46,12 @@ def batch_accuracy(train_loader, net, num_steps, device):
     return acc / total
 
 
-def snn_train(dataloader, cfg: DictConfig, logger, device, lr_cosine_steps_per_epoch: int = 1):
-    lr = cfg.train.lr
-    max_epochs = cfg.train.max_epochs
-    weight_decay = cfg.train.weight_decay
-    lr_cosine_min = cfg.train.scheduler.lr_cosine_min
-    lr_cosine_epochs = cfg.train.scheduler.lr_cosine_epochs
-    lr_cosine_warmup_epochs = cfg.train.scheduler.lr_cosine_warmup_epochs
+def experiment(exp_specs, device):
+    lr = exp_specs['lr']
+    max_epochs = exp_specs['max_epochs']
 
-    train_data_loader, val_data_loader, test_data_loader = (
-        dataloader[0],
-        dataloader[1],
-        dataloader[2],
+    train_data_loader, val_data_loader, test_data_loader = loading_data(
+        exp_specs=exp_specs, batch_size=exp_specs['batch_size'], num_workers=exp_specs['num_workers'],
     )
     spike_grad = surrogate.fast_sigmoid(slope=25)
     beta = 0.5
@@ -67,66 +63,63 @@ def snn_train(dataloader, cfg: DictConfig, logger, device, lr_cosine_steps_per_e
         nn.MaxPool2d(2),
         snn.Leaky(beta=beta, spike_grad=spike_grad, init_hidden=True),
         nn.Flatten(),
-        nn.Linear(64 * 13 * 13, 2),
+        nn.Linear(64 * 6 * 6, 2),
         snn.Leaky(beta=beta, spike_grad=spike_grad, init_hidden=True, output=True),
     ).to(device)
     loss_fn = SF.ce_rate_loss()
     opt = torch.optim.Adam(
-        model.parameters(), lr=lr, weight_decay=weight_decay, betas=(0.9, 0.999)
-    )
-    scheduler_kwargs = dict(
-        base_value=1.0,  # anneal from the original LR value,
-        final_value=lr_cosine_min / lr,
-        epochs=lr_cosine_epochs,
-        warmup_start_value=lr_cosine_min / lr,
-        warmup_epochs=lr_cosine_warmup_epochs,
-        steps_per_epoch=lr_cosine_steps_per_epoch,
-    )
-    print("Cosine annealing with warmup restart")
-    print(scheduler_kwargs)
-    scheduler = torch.optim.lr_scheduler.LambdaLR(
-        optimizer=opt, lr_lambda=U.CosineScheduler(**scheduler_kwargs),
+        model.parameters(), lr=lr, betas=(0.9, 0.999)
     )
 
     for current_epoch in range(max_epochs):
         model.train()
-        # for i, batches in enumerate(train_data_loader):
-        # #     opt.zero_grad()
 
-        #     inputs, labels = batches
-        #     labels = labels.squeeze()
-        # #     inputs = inputs.to(device)
-        # #     labels = labels.to(device)
-
-        # #     spk_rec, mem_rec = forward_pass(model, cfg.train.num_steps, inputs)
-
-        # #     loss = loss_fn(spk_rec, labels)
-        # #     loss.backward()
-        # #     opt.step()
         loss = backprop.BPTT(model, train_data_loader, optimizer=opt, criterion=loss_fn, 
-            num_steps=cfg.train.num_steps, time_var=False, device=device)
+            num_steps=exp_specs['num_steps'], time_var=False, device=device)
 
-        acc = batch_accuracy(train_data_loader, model, cfg.train.num_steps, device)
+        # acc = batch_accuracy(train_data_loader, model, cfg.train.num_steps, device)
         logger.record_tabular("train_loss", loss.cpu().data.numpy().item())
-        logger.record_tabular("train_acc", acc)
+        # logger.record_tabular("train_acc", acc)
 
-        model.eval()
-        with torch.no_grad():
-            for i, batches in enumerate(val_data_loader):
-                inputs, labels = batches
-            #     labels = labels.squeeze()
-                inputs = inputs.to(device)
-                labels = labels.to(device)
+        # model.eval()
+        # with torch.no_grad():
+        #     for i, batches in enumerate(val_data_loader):
+        #         inputs, labels = batches
+        #     #     labels = labels.squeeze()
+        #         inputs = inputs.to(device)
+        #         labels = labels.to(device)
 
-                spk_rec, mem_rec = forward_pass(model, cfg.train.val_num_steps, inputs)
-                val_loss = loss_fn(spk_rec, labels)
-            # val_loss = backprop.BPTT(model, val_data_loader, optimizer=opt, criterion=loss_fn, 
-            #     num_steps=cfg.train.val_num_steps, time_var=False, device=device)
-            val_acc = batch_accuracy(
-                val_data_loader, model, cfg.train.val_num_steps, device
-            )
-        scheduler.step()
-        logger.record_tabular("val_loss", val_loss.cpu().data.numpy().item())
-        logger.record_tabular("val_acc", val_acc)
+        #         spk_rec, mem_rec = forward_pass(model, cfg.train.val_num_steps, inputs)
+        #         val_loss = loss_fn(spk_rec, labels)
+        #     # val_loss = backprop.BPTT(model, val_data_loader, optimizer=opt, criterion=loss_fn, 
+        #     #     num_steps=cfg.train.val_num_steps, time_var=False, device=device)
+        #     val_acc = batch_accuracy(
+        #         val_data_loader, model, cfg.train.val_num_steps, device
+        #     )
+        # scheduler.step()
+        # logger.record_tabular("val_loss", val_loss.cpu().data.numpy().item())
+        # logger.record_tabular("val_acc", val_acc)
         logger.record_tabular("Epoch", current_epoch)
         logger.dump_tabular(with_prefix=False, with_timestamp=False)
+
+
+if __name__ == "__main__":
+    # Arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-e", "--experiment", help="experiment specification file")
+    parser.add_argument("-g", "--gpu", help="gpu id", type=int, default=0)
+    args = parser.parse_args()
+
+    with open(args.experiment, "r") as spec_file:
+        spec_string = spec_file.read()
+        exp_specs = yaml.load(spec_string, Loader=yaml.Loader)
+
+    if exp_specs["use_gpu"]:
+        device = ptu.set_gpu_mode(True, args.gpu)
+
+    # Set the random seed manually for reproducibility.
+    seed = exp_specs["seed"]
+    ptu.set_seed(seed)
+
+    setup_logger(log_dir=exp_specs["log_dir"], variant=exp_specs)
+    experiment(exp_specs, device)
