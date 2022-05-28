@@ -222,11 +222,7 @@ def build_nested_variant_generator(exp_spec):
 
 
 def run_single_process(script_path, variant_path, gpu_id):
-    command = "python {} -e {} -g {}".format(
-        script_path,
-        variant_path,
-        gpu_id,
-    )
+    command = "python {} -e {} -g {}".format(script_path, variant_path, gpu_id,)
     ret_code = os.system(command)
     if ret_code != 0:
         raise ExperimentError(script_path, [variant_path])

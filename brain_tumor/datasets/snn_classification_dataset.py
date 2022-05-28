@@ -76,7 +76,7 @@ class SNNClassificationDataset(Dataset):
             from brain_tumor.utils.presets import SimpleTransform2D
 
             self.transformation = SimpleTransform2D(
-                input_size=self._exp_specs['input_size'],
+                input_size=self._exp_specs["input_size"],
                 rot=rot,
                 rot_p=rot_p,
                 scale_factor=scale_factor,
@@ -88,7 +88,7 @@ class SNNClassificationDataset(Dataset):
             from brain_tumor.utils.presets import SimpleTransform25D
 
             self.transformation = SimpleTransform25D(
-                input_size=self._exp_specs['input_size'],
+                input_size=self._exp_specs["input_size"],
                 rot=rot,
                 rot_p=rot_p,
                 scale_factor=scale_factor,
@@ -153,12 +153,7 @@ class SNNClassificationDataset(Dataset):
         root = self._split["root"]
         seed = self._split["seed"]
         ratio = self._split["ratio"]
-        val_ids = json.load(
-            open(
-                f"{root}/val_ids_seed{seed}_ratio{ratio}.json",
-                "r",
-            )
-        )
+        val_ids = json.load(open(f"{root}/val_ids_seed{seed}_ratio{ratio}.json", "r",))
         annotations = U.read_csv(os.path.join(self._root, "train_labels.csv"))
 
         for i, data_id in enumerate(annotations["BraTS21ID"]):
@@ -183,7 +178,7 @@ class SNNClassificationDataset(Dataset):
 
         val_ids = json.load(
             open(
-                f"{self._split.root}/val_ids_seed{self._split.seed}_ratio{self._split.ratio}.json",
+                f"{self._split['root']}/val_ids_seed{self._split['seed']}_ratio{self._split['ratio']}.json",
                 "r",
             )
         )
@@ -237,9 +232,13 @@ class SNNClassificationDataset(Dataset):
             imgs.append(img)
 
         num_slices = len(imgs)
+
         if self._train and num_slices > self._max_slice_num:
             start_slice_idx = np.random.randint(0, num_slices - self._max_slice_num)
             imgs = imgs[start_slice_idx : start_slice_idx + self._max_slice_num]
+
+        # if self._train and num_slices < self._max_slice_num:
+        #     imgs = np.tile(imgs, (self._max_slice_num // num_slices + 1, 1, 1, 1))
 
         return imgs
 
@@ -249,57 +248,23 @@ class SNNClassificationDataset(Dataset):
         targets = torch.stack(targets)
 
         if self._img_dim == 2.5:
-            num_instances = len(imgs)
-            instance_ids = torch.cat(
-                [
-                    torch.LongTensor([idx] * imgs[idx].shape[0])
-                    for idx in range(num_instances)
-                ]
+
+            imgs = [item.numpy() for item in imgs]
+            imgs = torch.tensor(np.array(imgs)).view(
+                -1,
+                1,
+                1,
+                self._exp_specs["input_size"][0],
+                self._exp_specs["input_size"][1],
             )
 
-            imgs = torch.cat(imgs, dim=0)
+            while imgs.shape[0] < self._max_slice_num:
+                imgs = torch.cat(
+                    [imgs, imgs[0 : self._max_slice_num - imgs.shape[0]]], dim=0
+                )
 
-            return imgs, instance_ids, targets
+            return imgs, targets
         else:
             imgs = torch.stack(imgs)
 
             return imgs, targets
-
-
-if __name__ == "__main__":
-    img_dim = 2
-
-    dataset = BraTClassificationDataset(
-        exp_specs=DictConfig(
-            {
-                "split": {"root": "./train_val_splits", "seed": 42, "ratio": 0.1},
-                "input_size": [64, 64],
-                "max_slice_num": 200,
-            }
-        ),
-        root="/ssd3/Benchmark/haoyi/BRaTS2021/classification",
-        mri_type=["FLAIR"],  # , "T2w", "T1wCE"],
-        img_dim=img_dim,
-    )
-
-    img, label, target_weight = dataset.__getitem__(0)
-    print(img.shape)
-    print(label)
-    print(target_weight.shape)
-
-    if img_dim == 2.5:
-        from torch.utils.data import DataLoader
-
-        dataloader = DataLoader(
-            dataset,
-            batch_size=1,
-            num_workers=0,
-            shuffle=False,
-            collate_fn=dataset._collate_fn,
-        )
-        for imgs, instance_ids, targets, target_weights in dataloader:
-            print(imgs.shape)
-            # print(instance_ids.shape)
-            # print(targets.shape)
-            # print(target_weights.shape)
-            # break

@@ -16,9 +16,7 @@ from brain_tumor.utils.launcher_util import (
 
 if __name__ == "__main__":
     # Add arguments
-    parser = argparse.ArgumentParser(
-        description="SNN Training"
-    )
+    parser = argparse.ArgumentParser(description="SNN Training")
     parser.add_argument(
         "-e",
         "--experiment",

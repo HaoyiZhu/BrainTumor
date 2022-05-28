@@ -38,6 +38,9 @@ def batch_accuracy(train_loader, net, num_steps, device):
         for data, targets in train_loader:
             data = data.to(device)
             targets = targets.to(device)
+            if len(data.shape) == 5:
+                data = data.squeeze(1)
+                targets = torch.tile(targets, (129, 1))
             spk_rec, _ = forward_pass(net, num_steps, data)
 
             acc += SF.accuracy_rate(spk_rec, targets) * spk_rec.size(1)
@@ -47,11 +50,13 @@ def batch_accuracy(train_loader, net, num_steps, device):
 
 
 def experiment(exp_specs, device):
-    lr = exp_specs['lr']
-    max_epochs = exp_specs['max_epochs']
+    lr = exp_specs["lr"]
+    max_epochs = exp_specs["max_epochs"]
 
     train_data_loader, val_data_loader, test_data_loader = loading_data(
-        exp_specs=exp_specs, batch_size=exp_specs['batch_size'], num_workers=exp_specs['num_workers'],
+        exp_specs=exp_specs,
+        batch_size=exp_specs["batch_size"],
+        num_workers=exp_specs["num_workers"],
     )
     spike_grad = surrogate.fast_sigmoid(slope=25)
     beta = 0.5
@@ -67,38 +72,42 @@ def experiment(exp_specs, device):
         snn.Leaky(beta=beta, spike_grad=spike_grad, init_hidden=True, output=True),
     ).to(device)
     loss_fn = SF.ce_rate_loss()
-    opt = torch.optim.Adam(
-        model.parameters(), lr=lr, betas=(0.9, 0.999)
-    )
+    opt = torch.optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999))
 
     for current_epoch in range(max_epochs):
         model.train()
 
-        loss = backprop.BPTT(model, train_data_loader, optimizer=opt, criterion=loss_fn, 
-            num_steps=exp_specs['num_steps'], time_var=False, device=device)
+        if exp_specs["img_dim"] != 2.5:
+            loss = backprop.BPTT(
+                model,
+                train_data_loader,
+                optimizer=opt,
+                criterion=loss_fn,
+                num_steps=exp_specs["num_steps"],
+                time_var=False,
+                device=device,
+            )
+        else:
+            loss = backprop.BPTT(
+                model,
+                train_data_loader,
+                optimizer=opt,
+                criterion=loss_fn,
+                time_var=True,
+                device=device,
+            )
 
-        # acc = batch_accuracy(train_data_loader, model, cfg.train.num_steps, device)
+        acc = batch_accuracy(train_data_loader, model, exp_specs["num_steps"], device)
         logger.record_tabular("train_loss", loss.cpu().data.numpy().item())
-        # logger.record_tabular("train_acc", acc)
+        logger.record_tabular("train_acc", acc)
 
-        # model.eval()
-        # with torch.no_grad():
-        #     for i, batches in enumerate(val_data_loader):
-        #         inputs, labels = batches
-        #     #     labels = labels.squeeze()
-        #         inputs = inputs.to(device)
-        #         labels = labels.to(device)
+        model.eval()
+        with torch.no_grad():
+            val_acc = batch_accuracy(
+                val_data_loader, model, exp_specs["val_num_steps"], device
+            )
 
-        #         spk_rec, mem_rec = forward_pass(model, cfg.train.val_num_steps, inputs)
-        #         val_loss = loss_fn(spk_rec, labels)
-        #     # val_loss = backprop.BPTT(model, val_data_loader, optimizer=opt, criterion=loss_fn, 
-        #     #     num_steps=cfg.train.val_num_steps, time_var=False, device=device)
-        #     val_acc = batch_accuracy(
-        #         val_data_loader, model, cfg.train.val_num_steps, device
-        #     )
-        # scheduler.step()
-        # logger.record_tabular("val_loss", val_loss.cpu().data.numpy().item())
-        # logger.record_tabular("val_acc", val_acc)
+        logger.record_tabular("val_acc", val_acc)
         logger.record_tabular("Epoch", current_epoch)
         logger.dump_tabular(with_prefix=False, with_timestamp=False)
 
