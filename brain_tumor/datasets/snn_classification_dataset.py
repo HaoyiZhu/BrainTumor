@@ -233,12 +233,9 @@ class SNNClassificationDataset(Dataset):
 
         num_slices = len(imgs)
 
-        if self._train and num_slices > self._max_slice_num:
+        if  num_slices > self._max_slice_num:
             start_slice_idx = np.random.randint(0, num_slices - self._max_slice_num)
             imgs = imgs[start_slice_idx : start_slice_idx + self._max_slice_num]
-
-        # if self._train and num_slices < self._max_slice_num:
-        #     imgs = np.tile(imgs, (self._max_slice_num // num_slices + 1, 1, 1, 1))
 
         return imgs
 
@@ -249,19 +246,23 @@ class SNNClassificationDataset(Dataset):
 
         if self._img_dim == 2.5:
 
-            imgs = [item.numpy() for item in imgs]
-            imgs = torch.tensor(np.array(imgs)).view(
+            for i, item in enumerate(imgs):
+                while item.shape[0] < self._max_slice_num:
+                    item = torch.cat(
+                        [item, item[0 : self._max_slice_num - item.shape[0]]], dim=0
+                    )
+                if i == 0:
+                    imgs = item.unsqueeze(0)
+                else:
+                    imgs = torch.cat((imgs, item.unsqueeze(0)), dim=0)
+
+            imgs = imgs.view(
+                self._max_slice_num,
                 -1,
-                1,
                 1,
                 self._exp_specs["input_size"][0],
                 self._exp_specs["input_size"][1],
             )
-
-            while imgs.shape[0] < self._max_slice_num:
-                imgs = torch.cat(
-                    [imgs, imgs[0 : self._max_slice_num - imgs.shape[0]]], dim=0
-                )
 
             return imgs, targets
         else:

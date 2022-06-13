@@ -34,11 +34,9 @@ common:
 
 algo_training:
   variables:
-    batch_size: [1]
-    lr: [0.000001, 0.00001, 0.1]
-    max_epochs: [3]
-    num_steps: [50]
-    val_num_steps: [50]
+    batch_size: [128]
+    lr: [0.3]
+    max_epochs: [1]
 
   constants:
     exp_name: "csnn_train"  # exp_name is required

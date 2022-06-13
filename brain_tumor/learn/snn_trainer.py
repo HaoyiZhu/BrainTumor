@@ -21,7 +21,10 @@ def forward_pass(net, num_steps, data):
     utils.reset(net)  # resets hidden states for all LIF neurons in net
 
     for step in range(num_steps):
-        spk_out, mem_out = net(data)
+        if len(data.shape) == 5:
+            spk_out, mem_out = net(data[step])
+        else:
+            spk_out, mem_out = net(data)
         spk_rec.append(spk_out)
         mem_rec.append(mem_out)
 
@@ -39,8 +42,7 @@ def batch_accuracy(train_loader, net, num_steps, device):
             data = data.to(device)
             targets = targets.to(device)
             if len(data.shape) == 5:
-                data = data.squeeze(1)
-                targets = torch.tile(targets, (129, 1))
+                num_steps = data.shape[0]
             spk_rec, _ = forward_pass(net, num_steps, data)
 
             acc += SF.accuracy_rate(spk_rec, targets) * spk_rec.size(1)
@@ -87,6 +89,14 @@ def experiment(exp_specs, device):
                 time_var=False,
                 device=device,
             )
+            acc = batch_accuracy(
+                train_data_loader, model, exp_specs["num_steps"], device
+            )
+            model.eval()
+            with torch.no_grad():
+                val_acc = batch_accuracy(
+                    val_data_loader, model, exp_specs["val_num_steps"], device
+                )
         else:
             loss = backprop.BPTT(
                 model,
@@ -96,17 +106,15 @@ def experiment(exp_specs, device):
                 time_var=True,
                 device=device,
             )
+            acc = batch_accuracy(train_data_loader, model, num_steps=0, device=device)
+            model.eval()
+            with torch.no_grad():
+                val_acc = batch_accuracy(
+                    val_data_loader, model, num_steps=0, device=device
+                )
 
-        acc = batch_accuracy(train_data_loader, model, exp_specs["num_steps"], device)
         logger.record_tabular("train_loss", loss.cpu().data.numpy().item())
         logger.record_tabular("train_acc", acc)
-
-        model.eval()
-        with torch.no_grad():
-            val_acc = batch_accuracy(
-                val_data_loader, model, exp_specs["val_num_steps"], device
-            )
-
         logger.record_tabular("val_acc", val_acc)
         logger.record_tabular("Epoch", current_epoch)
         logger.dump_tabular(with_prefix=False, with_timestamp=False)
