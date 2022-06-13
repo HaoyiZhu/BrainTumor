@@ -82,4 +82,9 @@ CUDA_VISIBLE_DEVICES=0,1 python scripts/train.py train.devices=2
 
 ## SNN Training
 
-TBD
+```bash
+# -e means the experiment specification file you choose
+# -g means the gpu id you want to use
+python scripts/snn_train.py -e configs/snn.yaml -g 0
+python scripts/snn_train.py -e configs/snn_new.yaml -g 1
+```
