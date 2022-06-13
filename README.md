@@ -1,10 +1,10 @@
-# Brain Tumor Classification and Segmentation
+# AI3601 Final Project: Brain Tumor Radiogenomic Classification
 
 [Brain Tumor AI Challenge (2021)](https://www.rsna.org/education/ai-resources-and-training/ai-image-challenge/brain-tumor-ai-challenge-2021)
 
-Classification: [RSNA-MICCAI Brain Tumor Radiogenomic Classification](https://www.kaggle.com/competitions/rsna-miccai-brain-tumor-radiogenomic-classification/data)
+Kaggle: [RSNA-MICCAI Brain Tumor Radiogenomic Classification](https://www.kaggle.com/competitions/rsna-miccai-brain-tumor-radiogenomic-classification/data)
 
-Segmentation: [RSNA-ASNR-MICCAI Brain Tumor Segmentation (BraTS)](https://www.kaggle.com/datasets/dschettler8845/brats-2021-task1)
+Author: [Haoyi Zhu](https://github.com/HaoyiZhu/), [Junjie Huang](https://github.com/Jessica-legend), [Haoxuan Sun](https://github.com/guwangtu)
 
 ## Installation
 
