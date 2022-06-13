@@ -37,7 +37,10 @@ def traverse_one_dict_using_the_other(raw_dict: Dict, refer_dict: Dict):
 
 def create_pipeline_dir(exp_specs, base_log_dir=None):
     key_configs = get_value_with_list_keys(
-        exp_specs["meta_data"]["key_config"], ["common",],
+        exp_specs["meta_data"]["key_config"],
+        [
+            "common",
+        ],
     )
     exp_name = exp_specs["meta_data"]["pipeline_exp_name"]
 
@@ -72,7 +75,10 @@ def create_pipeline_variant_file(
 
 
 def create_pipeline_exp_log_dir(
-    variant_dict: Dict, pipeline_dir: str, exp_name: str, key_config: Dict = None,
+    variant_dict: Dict,
+    pipeline_dir: str,
+    exp_name: str,
+    key_config: Dict = None,
 ):
     if key_config is not None:
         for value, short_name in traverse_one_dict_using_the_other(

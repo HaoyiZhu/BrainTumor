@@ -222,7 +222,11 @@ def build_nested_variant_generator(exp_spec):
 
 
 def run_single_process(script_path, variant_path, gpu_id):
-    command = "python {} -e {} -g {}".format(script_path, variant_path, gpu_id,)
+    command = "python {} -e {} -g {}".format(
+        script_path,
+        variant_path,
+        gpu_id,
+    )
     ret_code = os.system(command)
     if ret_code != 0:
         raise ExperimentError(script_path, [variant_path])
@@ -283,7 +287,10 @@ def run_multi_processes(script_path, variant_paths, num_workers, gpu_id):
         # terminate currently running experiments and not-yet runned experiments
         raise ExperimentError(
             script_path,
-            [*[d["specs"] for d in command_format_dicts], *variant_paths[args_idx:],],
+            [
+                *[d["specs"] for d in command_format_dicts],
+                *variant_paths[args_idx:],
+            ],
         )
 
 
