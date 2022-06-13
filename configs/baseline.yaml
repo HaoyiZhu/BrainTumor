@@ -35,7 +35,7 @@ model:
     input_dim: ${model.mlp_input_dim}
     hidden_dim: 128
     output_dim: 2
-    hidden_depth: 2
+    hidden_depth: 4
 
 loss:
   task: ${dataset.task}
@@ -45,9 +45,9 @@ loss:
 train:
   batch_size: 128
   num_workers: 32
-  lr: 1e-4
-  weight_decay: 1e-2
-  max_epochs: 100
+  lr: 1e-3
+  weight_decay: 1e-6
+  max_epochs: 200
   devices: 4
   strategy: "ddp"
   scheduler:

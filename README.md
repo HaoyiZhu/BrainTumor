@@ -71,7 +71,7 @@ Finally, extract the datasets to `./data` and make them look like this:
 	
 ```
 
-## Training
+## ANN Training
 
 ```bash
 # Choose one or multiple gpus
@@ -80,8 +80,6 @@ Finally, extract the datasets to `./data` and make them look like this:
 CUDA_VISIBLE_DEVICES=0,1 python scripts/train.py train.devices=2
 ```
 
-
-
-## Validation
+## SNN Training
 
 TBD

@@ -11,3 +11,4 @@ nibabel
 torch-scatter
 einops
 timm
+snntorch
