@@ -151,3 +151,4 @@ exp/
 try.out
 .gitignore
 .vscode
+logs
