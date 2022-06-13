@@ -36,8 +36,8 @@ algo_training:
     batch_size: [128]
     lr: [0.001]
     max_epochs: [80]
-    num_steps: [128]
-    val_num_steps: [128]
+    num_steps: [128]  # [50]
+    val_num_steps: [128]  # [50]
 
   constants:
     exp_name: "csnn_train"  # exp_name is required
