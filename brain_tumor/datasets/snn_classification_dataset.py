@@ -16,13 +16,13 @@ from torch.utils.data import Dataset
 import brain_tumor.utils as U
 
 
-class BraTClassificationDataset(Dataset):
+class SNNClassificationDataset(Dataset):
     """
     Dataset for brain tumor radiogenomic classification.
 
     Parameters
     ----------
-    cfg: dict
+    exp_specs: dict
         Dataset configuration.
     root: str
         Path to directory of classification data.
@@ -39,14 +39,14 @@ class BraTClassificationDataset(Dataset):
 
     def __init__(
         self,
-        cfg: DictConfig,
+        exp_specs: DictConfig,
         root: str,
         train: bool = True,
         img_dim: int | float = 2,
         mri_type: str | list[str] = "T1wCE",
     ):
-        super(BraTClassificationDataset, self).__init__()
-        self._cfg = cfg
+        super(SNNClassificationDataset, self).__init__()
+        self._exp_specs = exp_specs
 
         self._root = root
         self._train = train
@@ -54,18 +54,18 @@ class BraTClassificationDataset(Dataset):
         self._mri_type = mri_type
         self._check_mri_type()
 
-        self._split = self._cfg.split
+        self._split = self._exp_specs["split"]
         if self._img_dim == 2.5:
-            self._max_slice_num = self._cfg.max_slice_num
+            self._max_slice_num = self._exp_specs["max_slice_num"]
 
         # self._img_dir = os.path.join(root, "train" if self._train else "test")
         self._img_dir = os.path.join(root, "train")
 
-        if self._train and "aug" in self._cfg:
-            rot = self._cfg["aug"]["rot_factor"]
-            rot_p = self._cfg["aug"]["rot_p"]
-            scale_factor = self._cfg["aug"]["scale_factor"]
-            h_flip_p = self._cfg["aug"]["h_flip_p"]
+        if self._train and "aug" in self._exp_specs:
+            rot = self._exp_specs["aug"]["rot_factor"]
+            rot_p = self._exp_specs["aug"]["rot_p"]
+            scale_factor = self._exp_specs["aug"]["scale_factor"]
+            h_flip_p = self._exp_specs["aug"]["h_flip_p"]
         else:
             rot = 0.0
             rot_p = 0.0
@@ -76,7 +76,7 @@ class BraTClassificationDataset(Dataset):
             from brain_tumor.utils.presets import SimpleTransform2D
 
             self.transformation = SimpleTransform2D(
-                input_size=self._cfg.input_size,
+                input_size=self._exp_specs["input_size"],
                 rot=rot,
                 rot_p=rot_p,
                 scale_factor=scale_factor,
@@ -88,11 +88,10 @@ class BraTClassificationDataset(Dataset):
             from brain_tumor.utils.presets import SimpleTransform25D
 
             self.transformation = SimpleTransform25D(
-                input_size=self._cfg.input_size,
+                input_size=self._exp_specs["input_size"],
                 rot=rot,
                 rot_p=rot_p,
                 scale_factor=scale_factor,
-                h_flip_p=h_flip_p,
                 task="classification",
                 train=self._train,
             )
@@ -151,13 +150,10 @@ class BraTClassificationDataset(Dataset):
 
     def _prepare_data_2d(self):
         items, labels = [], []
-
-        val_ids = json.load(
-            open(
-                f"{self._split.root}/val_ids_seed{self._split.seed}_ratio{self._split.ratio}.json",
-                "r",
-            )
-        )
+        root = self._split["root"]
+        seed = self._split["seed"]
+        ratio = self._split["ratio"]
+        val_ids = json.load(open(f"{root}/val_ids_seed{seed}_ratio{ratio}.json", "r",))
         annotations = U.read_csv(os.path.join(self._root, "train_labels.csv"))
 
         for i, data_id in enumerate(annotations["BraTS21ID"]):
@@ -182,7 +178,7 @@ class BraTClassificationDataset(Dataset):
 
         val_ids = json.load(
             open(
-                f"{self._split.root}/val_ids_seed{self._split.seed}_ratio{self._split.ratio}.json",
+                f"{self._split['root']}/val_ids_seed{self._split['seed']}_ratio{self._split['ratio']}.json",
                 "r",
             )
         )
@@ -236,7 +232,8 @@ class BraTClassificationDataset(Dataset):
             imgs.append(img)
 
         num_slices = len(imgs)
-        if self._train and num_slices > self._max_slice_num:
+
+        if  num_slices > self._max_slice_num:
             start_slice_idx = np.random.randint(0, num_slices - self._max_slice_num)
             imgs = imgs[start_slice_idx : start_slice_idx + self._max_slice_num]
 
@@ -248,64 +245,27 @@ class BraTClassificationDataset(Dataset):
         targets = torch.stack(targets)
 
         if self._img_dim == 2.5:
-            num_instances = len(imgs)
-            instance_ids = torch.cat(
-                [
-                    torch.LongTensor([idx] * imgs[idx].shape[0])
-                    for idx in range(num_instances)
-                ]
+
+            for i, item in enumerate(imgs):
+                while item.shape[0] < self._max_slice_num:
+                    item = torch.cat(
+                        [item, item[0 : self._max_slice_num - item.shape[0]]], dim=0
+                    )
+                if i == 0:
+                    imgs = item.unsqueeze(0)
+                else:
+                    imgs = torch.cat((imgs, item.unsqueeze(0)), dim=0)
+
+            imgs = imgs.view(
+                self._max_slice_num,
+                -1,
+                1,
+                self._exp_specs["input_size"][0],
+                self._exp_specs["input_size"][1],
             )
 
-            imgs = torch.cat(imgs, dim=0)
-
-            return imgs, instance_ids, targets
+            return imgs, targets
         else:
             imgs = torch.stack(imgs)
 
             return imgs, targets
-
-
-if __name__ == "__main__":
-    img_dim = 2.5
-
-    dataset = BraTClassificationDataset(
-        cfg=DictConfig(
-            {
-                "split": {"root": "./train_val_splits", "seed": 42, "ratio": 0.1},
-                "input_size": [64, 64],
-                "max_slice_num": 200,
-                "aug": {
-                    "rot_factor": 40,
-                    "rot_p": 1.0,
-                    "scale_factor": 0.3,
-                    "h_flip_p": 0.5,
-                },
-            }
-        ),
-        root="/ssd3/Benchmark/haoyi/BRaTS2021/classification",
-        mri_type=["FLAIR"],  # , "T2w", "T1wCE"],
-        img_dim=img_dim,
-        train=True,
-    )
-
-    img, label, target_weight = dataset.__getitem__(0)
-    print(img.shape)
-    print(label)
-    print(target_weight.shape)
-
-    if img_dim == 2.5:
-        from torch.utils.data import DataLoader
-
-        dataloader = DataLoader(
-            dataset,
-            batch_size=1,
-            num_workers=0,
-            shuffle=False,
-            collate_fn=dataset._collate_fn,
-        )
-        for imgs, instance_ids, targets, target_weights in dataloader:
-            print(imgs.shape)
-            # print(instance_ids.shape)
-            # print(targets.shape)
-            # print(target_weights.shape)
-            # break

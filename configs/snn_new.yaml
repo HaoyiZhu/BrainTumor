@@ -6,6 +6,7 @@ meta_data:
   key_config:
     common:
       model_name: "model"
+      img_dim: "dim"
     algo_training:
       lr: :lr
 
@@ -15,7 +16,7 @@ common:
 
   task: "classification"
   root: "./data/classification"
-  img_dim: 2
+  img_dim: 2.5
   mri_type: "T1wCE"
   split:
     root: "./train_val_splits"
@@ -34,10 +35,8 @@ common:
 algo_training:
   variables:
     batch_size: [128]
-    lr: [0.001]
-    max_epochs: [80]
-    num_steps: [128]
-    val_num_steps: [128]
+    lr: [0.3]
+    max_epochs: [1]
 
   constants:
     exp_name: "csnn_train"  # exp_name is required

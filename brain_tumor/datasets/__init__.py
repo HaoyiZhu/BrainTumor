@@ -1,2 +1,3 @@
 from .brat_classification_dataset import BraTClassificationDataset
+from .snn_classification_dataset import SNNClassificationDataset
 from .brat_segmentation_dataset import BraTSegmentationDataset
