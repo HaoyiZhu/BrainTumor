@@ -13,7 +13,9 @@ class Criterion:
     """
 
     def __init__(
-        self, task, **kwargs,
+        self,
+        task,
+        **kwargs,
     ):
         super(Criterion, self).__init__()
         self.task = task
