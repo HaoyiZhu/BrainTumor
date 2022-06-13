@@ -153,7 +153,12 @@ class SNNClassificationDataset(Dataset):
         root = self._split["root"]
         seed = self._split["seed"]
         ratio = self._split["ratio"]
-        val_ids = json.load(open(f"{root}/val_ids_seed{seed}_ratio{ratio}.json", "r",))
+        val_ids = json.load(
+            open(
+                f"{root}/val_ids_seed{seed}_ratio{ratio}.json",
+                "r",
+            )
+        )
         annotations = U.read_csv(os.path.join(self._root, "train_labels.csv"))
 
         for i, data_id in enumerate(annotations["BraTS21ID"]):
@@ -233,7 +238,7 @@ class SNNClassificationDataset(Dataset):
 
         num_slices = len(imgs)
 
-        if  num_slices > self._max_slice_num:
+        if num_slices > self._max_slice_num:
             start_slice_idx = np.random.randint(0, num_slices - self._max_slice_num)
             imgs = imgs[start_slice_idx : start_slice_idx + self._max_slice_num]
 
